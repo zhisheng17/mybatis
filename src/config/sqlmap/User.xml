@@ -33,18 +33,50 @@
     <!-- 添加用户 -->
     <insert id="insetrUser" parameterType="cn.zhisheng.mybatis.po.User" >
         <!-- selectKey将主键返回，需要再返回
+             parameterType：指定输入参数类型是 POJO （包括用户信息）
              添加selectKey实现将主键返回
              keyProperty:返回的主键存储在pojo中的哪个属性
              order：selectKey的执行顺序，是相对与insert语句来说，由于mysql的自增原理执行完insert语句之后才将主键生成，所以这里selectKey的执行顺序为after
-             resultType:返回的主键是什么类型
+             resultType:返回的主键（LAST_INSERT_ID()）是什么类型
              LAST_INSERT_ID():是mysql的函数，返回auto_increment自增列新记录id值。
-
+             #{}中指定POJO参数的属性名，接收到POJO对象的属性值，Mybatis通过OGNL获取对象的属性值
         -->
         <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
             select LAST_INSERT_ID()
         </selectKey>
+
+        <!--使用 MySQL 的 uuid()生成主键
+            执行过程：
+            首先通过uuid()得到主键，将主键设置到user对象的id属性中
+            其次执行insert时，从user对象中取出id属性值
+        -->
+        <!--
+        <selectKey keyProperty="id" order="BEFORE" resultType="java.lang.String">
+            select uuid()
+        </selectKey>
+        insert into user(id, username, birthday, sex, address)
+        values(#{id}, #{username}, #{birthday}, #{sex}, #{address})
+        -->
+
         insert into user(username, birthday, sex, address)
         values(#{username}, #{birthday}, #{sex}, #{address})
     </insert>
+
+    <!--根据id更新用户
+        需要输入用户的id
+        传入用户要更新的信息
+        parameterType指定user对象，包括id和更新信息，id必须存在
+        #{id}：从输入对象中获取id属性值
+    -->
+    <update id="updateUserById" parameterType="cn.zhisheng.mybatis.po.User">
+        update user set username = #{username}, birthday = #{birthday}, sex = #{sex}, address = #{address} where user.id = #{id}
+
+    </update>
+
+    <!--删除用户-->
+    <delete id="deleteUserById" parameterType="int">
+        delete from user where user.id = #{id}
+    </delete>
+    
 
 </mapper>

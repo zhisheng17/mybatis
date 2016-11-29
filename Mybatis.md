@@ -369,9 +369,9 @@ public class User
 
 +  编写程序
 
-    `MybatisFirst.java`
+      `MybatisFirst.java`
 
-    ​
+      ​
 
 
 ```java
@@ -519,8 +519,8 @@ public void createSqlSessionFactory() throws IOException {
 
 ### 1、#{ } 和 ${ } 的区别
 
-> + `#{ }`表示一个占位符号，通过`#{ }`可以实现 `preparedStatement` 向占位符中设置值，自动进行java 类型和 jdbc 类型转换，`#{ }` 可以有效防止sql注入。`#{ }` 可以接收简单类型值或 pojo 属性值。 如果 `parameterType` 传输单个简单类型值，`#{ } `括号中可以是 value 或其它名称。
-> + `${ }` 表示拼接 sql 串，通过`${ }`可以将 parameterType 传入的内容拼接在 sql 中且不进行 jdbc 类型转换， `${ }`可以接收简单类型值或 pojo 属性值，如果 parameterType 传输单个简单类型值，${}括号中只能是 value。
+> + `#{ }`表示一个占位符号，通过`#{ }`可以实现 `preparedStatement` 向占位符中设置值，自动进行java 类型和 jdbc 类型转换，`#{ }` 可以有效防止sql注入。`#{ }` 可以接收简单类型值或 pojo 属性值（通过 OGNL 读取对象中的值，属性.属性.属性..方式获取对象属性值）。 如果 `parameterType` 传输单个简单类型值，`#{ } `括号中可以是 value 或其它名称。
+> + `${ }` 表示拼接 sql 串，通过`${ }`可以将 parameterType 传入的内容拼接在 sql 中且不进行 jdbc 类型转换， `${ }`可以接收简单类型值或 pojo 属性值（（通过 OGNL 读取对象中的值，属性.属性.属性..方式获取对象属性值）），如果 parameterType 传输单个简单类型值，${}括号中只能是 value。
 
 ### 2、parameterType 和 resultType 区别 
 
@@ -529,11 +529,11 @@ public void createSqlSessionFactory() throws IOException {
 
 ### 3、selectOne 和 selectList 区别
 
-> + selectOne查询一条记录，如果使用selectOne查询多条记录则抛出异常：
+> + selectOne 查询一条记录来进行映射，如果使用selectOne查询多条记录则抛出异常：
 >
->   org.apache.ibatis.exceptions.TooManyResultsException: Expected one result (or null) to bereturned by selectOne(), but found: 3 at org.apache.ibatis.session.defaults.DefaultSqlSession.selectOne(DefaultSqlSession.java:70)
+>   org.apache.ibatis.exceptions.TooManyResultsException: Expected one result (or null) to bereturned by selectOne(), but found: 3 at 
 >
-> + selectList可以查询一条或多条记录。
+> + selectList 可以查询一条或多条记录来进行映射。
 
 
 
@@ -599,7 +599,178 @@ public void createSqlSessionFactory() throws IOException {
 
 
 
-第七个视频看完了
+### 10、自增主键返回 与 非自增主键返回
+
++ MySQL 自增主键：执行 insert 提交之前自动生成一个自增主键，通过 MySQL 函数获取到刚插入记录的自增主键： LAST_INSERT_ID() ，是在 insert 函数之后调用。
+
++ 非自增主键返回：使用 MySQL 的 uuid() 函数生成主键，需要修改表中 id 字段类型为 String ，长度设置为 35 位，执行思路：先通过 uuid() 查询到主键，将主键输入到 sql 语句中；执行 uuid() 语句顺序相对于 insert 语句之前执行。
+
+  刚才那个插入用户的地方，其实也可以通过 uuid() 来生成主键，如果是这样的话，那么我们就需要在 `User.xml` 中加入如下代码：
+
+  ```xml
+  <!--使用 MySQL 的 uuid()生成主键
+      执行过程：
+      首先通过uuid()得到主键，将主键设置到user对象的id属性中
+      其次执行insert时，从user对象中取出id属性值
+   -->
+  <selectKey keyProperty="id" order="BEFORE" resultType="java.lang.String">
+              select uuid()
+  </selectKey>
+  insert into user(id, username, birthday, sex, address) values(#{id}, #{username}, #{birthday}, #{sex}, #{address})
+  ```
+
++ Oracle 使用序列生成主键
+
+  首先自定义一个序列且用于生成主键，selectKey使用如下：
+
+  ```xml
+  <insert  id="insertUser" parameterType="cn.itcast.mybatis.po.User">
+    <selectKey resultType="java.lang.Integer" order="BEFORE" 
+      keyProperty="id">
+      SELECT 自定义序列.NEXTVAL FROM DUAL
+    </selectKey>
+  insert into user(id,username,birthday,sex,address) 
+         values(#{id},#{username},#{birthday},#{sex},#{address})
+  </insert>
+
+  ```
+
+  ​
+
+### 11、删除用户
+
+前面说了这么多了，这里就简单来说明下：
+
+在 User.xml 文件中加入如下代码：
+
+```xml
+<!--删除用户-->
+    <delete id="deleteUserById" parameterType="int">
+        delete from user where user.id = #{id}
+    </delete>
+```
+
+在 MybatisFirst.java 文件中加入如下代码：
+
+```java
+//删除用户
+    @Test
+    public void deleteUserByIdTest() throws IOException
+    {
+        //Mybatis 配置文件
+        String resource = "SqlMapConfig.xml";
+
+        //得到配置文件流
+        InputStream inputStream = Resources.getResourceAsStream(resource);
+
+        //创建会话工厂,传入Mybatis的配置文件信息
+        SqlSessionFactory  sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
+
+
+        //通过工厂得到SqlSession
+        SqlSession sqlSession = sqlSessionFactory.openSession();
+
+        //通过SqlSession操作数据库
+        //第一个参数：映射文件中Statement的id，等于 = namespace + "." + Statement的id
+        //第二个参数：指定和映射文件中所匹配的parameterType类型的参数
+
+        sqlSession.delete("test.deleteUserById", 26);
+
+        //提交事务
+        sqlSession.commit();
+      
+        //释放资源
+        sqlSession.close();
+    }
+```
+
+测试结果如下：
+
+![](pic/3.jpg)
+
+之前的数据库 user 表查询结果：
+
+![](pic/4.jpg)
+
+执行完测试代码后，结果如下：
+
+![](pic/5.jpg)
+
+
+
+### 12、更新用户信息
+
+在 User.xml 中加入如下代码：
+
+```xml
+<!--根据id更新用户
+        需要输入用户的id
+        传入用户要更新的信息
+        parameterType指定user对象，包括id和更新信息，id必须存在
+        #{id}：从输入对象中获取id属性值
+-->
+<update id="updateUserById" parameterType="cn.zhisheng.mybatis.po.User">
+        update user set username = #{username}, birthday = #{birthday}, sex = #{sex}, address = #{address} where user.id = #{id}
+    </update>
+```
+
+然后在 MybatisFirst.java 中加入
+
+```java
+//根据id更新用户信息
+    @Test
+    public void updateUserByIdTest() throws IOException, ParseException {
+        //Mybatis 配置文件
+        String resource = "SqlMapConfig.xml";
+
+        //得到配置文件流
+        InputStream inputStream = Resources.getResourceAsStream(resource);
+
+        //创建会话工厂,传入Mybatis的配置文件信息
+        SqlSessionFactory  sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
+
+        //通过工厂得到SqlSession
+        SqlSession sqlSession = sqlSessionFactory.openSession();
+
+        //为了设置生日的日期输入
+        SimpleDateFormat sdf = new SimpleDateFormat ("yyyy-MM-dd");
+
+        User user = new User();
+        //根据id更新用户信息
+        user.setId(24);
+        user.setUsername("张四风");
+        user.setBirthday(sdf.parse("2015-01-12"));
+        user.setSex("女");
+        user.setAddress("上海黄埔");
+
+        //通过SqlSession操作数据库
+        //第一个参数：映射文件中Statement的id，等于 = namespace + "." + Statement的id
+        //第二个参数：指定和映射文件中所匹配的parameterType类型的参数
+        sqlSession.update("test.updateUserById", user);
+
+        //提交事务
+        sqlSession.commit();
+
+        //释放资源
+        sqlSession.close();
+    }
+```
+
+测试结果如下：
+
+![](pic/6.jpg)
+
+查看数据库，id 为 24 的用户信息是否更新了：
+
+![](pic/7.jpg) 
+
+啊，是不是很爽，所有的需求都完成了。
+
+没错，这只是 Mybatis 的一个简单的入门程序，简单的实现了对数据库的增删改查功能，通过这个我们大概可以了解这个编程方式了。
+
+
+
+
 
 
 

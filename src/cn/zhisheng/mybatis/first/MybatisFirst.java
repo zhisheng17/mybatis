@@ -97,8 +97,10 @@ public class MybatisFirst
         //通过工厂得到SqlSession
         SqlSession sqlSession = sqlSessionFactory.openSession();
 
+        //插入用户对象
         User user = new User();
 
+        //为了设置生日的日期输入
         SimpleDateFormat sdf = new SimpleDateFormat ("yyyy-MM-dd");
 
 
@@ -108,11 +110,87 @@ public class MybatisFirst
         user.setAddress("江西南昌");
 
         sqlSession.insert("test.insetrUser", user);
+
+        //提交事务
         sqlSession.commit();
 
 
         //释放资源
         sqlSession.close();
 
+    }
+
+
+    //删除用户
+    @Test
+    public void deleteUserByIdTest() throws IOException
+    {
+        //Mybatis 配置文件
+        String resource = "SqlMapConfig.xml";
+
+        //得到配置文件流
+        InputStream inputStream = Resources.getResourceAsStream(resource);
+
+        //创建会话工厂,传入Mybatis的配置文件信息
+        SqlSessionFactory  sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
+
+
+        //通过工厂得到SqlSession
+        SqlSession sqlSession = sqlSessionFactory.openSession();
+
+        //通过SqlSession操作数据库
+        //第一个参数：映射文件中Statement的id，等于 = namespace + "." + Statement的id
+        //第二个参数：指定和映射文件中所匹配的parameterType类型的参数
+
+        //传入id删除用户
+        sqlSession.delete("test.deleteUserById", 26);
+
+        //提交事务
+        sqlSession.commit();
+
+        //释放资源
+        sqlSession.close();
+    }
+
+
+    //根据id更新用户信息
+    @Test
+    public void updateUserByIdTest() throws IOException, ParseException {
+        //Mybatis 配置文件
+        String resource = "SqlMapConfig.xml";
+
+        //得到配置文件流
+        InputStream inputStream = Resources.getResourceAsStream(resource);
+
+        //创建会话工厂,传入Mybatis的配置文件信息
+        SqlSessionFactory  sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
+
+
+        //通过工厂得到SqlSession
+        SqlSession sqlSession = sqlSessionFactory.openSession();
+
+
+
+        //为了设置生日的日期输入
+        SimpleDateFormat sdf = new SimpleDateFormat ("yyyy-MM-dd");
+
+        User user = new User();
+        //根据id更新用户信息
+        user.setId(24);
+        user.setUsername("张四风");
+        user.setBirthday(sdf.parse("2015-01-12"));
+        user.setSex("女");
+        user.setAddress("上海黄埔");
+
+        //通过SqlSession操作数据库
+        //第一个参数：映射文件中Statement的id，等于 = namespace + "." + Statement的id
+        //第二个参数：指定和映射文件中所匹配的parameterType类型的参数
+        sqlSession.update("test.updateUserById", user);
+
+        //提交事务
+        sqlSession.commit();
+
+        //释放资源
+        sqlSession.close();
     }
 }
