@@ -165,7 +165,7 @@ public class JdbcTest
 > + Executor （执行器）是一个接口（基本执行器、缓存执行器）、SqlSession 内部通过执行器操作数据库
 >
 > + Mapped Statement （底层封装对象）对操作数据库存储封装，包括 sql 语句、输入参数、输出结果类型
- ​
+>    ​
 
 
 
@@ -173,21 +173,27 @@ public class JdbcTest
 
 ### 1、需求
 
-    用户的增删改查
+实现以下功能：
+
+> + 根据用户id查询一个用户信息
+> + 根据用户名称模糊查询用户信息列表
+> + 添加用户
+> + 更新用户
+> + 删除用户
 
 ### 2、环境
-    
-    java 环境 ：jdk1.8.0_77
-    
-    开发工具 ： IDEA 2016.1
-    
-    数据库 ： MySQL 5.7
-    
-    Mybatis 运行环境（ jar 包）
-    
-    MySQL 驱动包
-    
-    其他依赖包
+
+java 环境 ：jdk1.8.0_77
+
+开发工具 ： IDEA 2016.1
+
+数据库 ： MySQL 5.7
+
+Mybatis 运行环境（ jar 包）
+
+MySQL 驱动包
+
+其他依赖包
 
 ### 3、 log4j.properties
 
@@ -243,9 +249,9 @@ Mybatis默认使用log4j作为输出日志信息。
 
 
 
-### 6、创建 po 类 
+### 6、创建 po 类
 
-Po类作为mybatis进行sql映射使用，po类通常与数据库表对应，User.java如下：
+Po 类作为 mybatis 进行 sql 映射使用，po 类通常与数据库表对应，User.java 如下：
 
 ```java
 package cn.zhisheng.mybatis.po;
@@ -309,7 +315,7 @@ public class User
 
 
 
-### 7、根据用户 id（）主键查询用户信息
+### 7、根据用户 id（主键）查询用户信息
 
 +  映射文件
 
@@ -359,11 +365,16 @@ public class User
 
    ![](pic/加载User映射文件.jpg)
 
+   ​
+
 +  编写程序
 
-   `MybatisFirst.java`
+    `MybatisFirst.java`
 
-   ```java
+    ​
+
+
+```java
    package cn.zhisheng.mybatis.first;
 
    import cn.zhisheng.mybatis.po.User;
@@ -376,7 +387,7 @@ public class User
    import java.io.IOException;
    import java.io.InputStream;
 
-   /**
+       /**
    * Created by 10412 on 2016/11/28.
    */
    public class MybatisFirst
@@ -393,14 +404,15 @@ public class User
 
           //创建会话工厂,传入Mybatis的配置文件信息
           SqlSessionFactory  sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
-            //通过工厂得到SqlSession
+
+        //通过工厂得到SqlSession
          SqlSession sqlSession = sqlSessionFactory.openSession();
 
          //通过SqlSession操作数据库
          //第一个参数：映射文件中Statement的id，等于 = namespace + "." + Statement的id
          //第二个参数：指定和映射文件中所匹配的parameterType类型的参数
          //sqlSession.selectOne 结果与映射文件中所匹配的resultType类型的对象
-         User user = sqlSession.selectOne("namespace.findUserById", 1);
+         User user = sqlSession.selectOne("test.findUserById", 1);
 
          System.out.println(user);
 
@@ -408,12 +420,190 @@ public class User
          sqlSession.close();
      }
    }
-   ```
+```
+
+
+然后运行一下这个测试，发现结果如下就代表可以了：
+
+![](pic/Test1.jpg)
+
+
+
+### 8、根据用户名称模糊查询用户信息列表
+
++ 映射文件
+
+  依旧使用 User.xml 文件，只不过要在原来的文件中加入
+
+  ```xml
+  <!-- 自定义条件查询用户列表
+  	resultType：指定就是单条记录所映射的java对象类型
+      ${}:表示拼接sql串，将接收到的参数内容不加修饰的拼接在sql中
+      使用${}拼接sql，会引起sql注入
+      ${value}：接收输入参数的内容，如果传入类型是简单类型，${}中只能够使用value 
+  -->
+      <select id="findUserByUsername" parameterType="java.lang.String" resultType="cn.zhisheng.mybatis.po.User">
+          select * from user where username like '%${value}%'
+      </select>
+  ```
+
+  ![](pic/加载User映射文件2.jpg)
+
+
+
++ 编写程序
+
+  依旧直接在刚才那个 `MybatisFirst.java` 中加入测试代码：
+
+  ```java
+  //根据用户名称模糊查询用户信息列表
+      @Test
+      public void findUserByUsernameTest() throws IOException
+      {
+          //Mybatis 配置文件
+          String resource = "SqlMapConfig.xml";
+
+          //得到配置文件流
+          InputStream inputStream = Resources.getResourceAsStream(resource);
+
+          //创建会话工厂,传入Mybatis的配置文件信息
+          SqlSessionFactory  sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
+        //通过工厂得到SqlSession
+        SqlSession sqlSession = sqlSessionFactory.openSession();
+
+        //通过SqlSession操作数据库
+        //第一个参数：映射文件中Statement的id，等于 = namespace + "." + Statement的id
+        //第二个参数：指定和映射文件中所匹配的parameterType类型的参数
+
+        //selectList 查询结果可能多条
+        //list中的user和映射文件中resultType所指定的类型一致
+        List<User> list = sqlSession.selectList("test.findUserByUsername", "小明");
+
+        System.out.println(list);
+
+        //释放资源
+        sqlSession.close();
+    }
+  ```
 
 
 
 
- Mybatis 开发 dao 两种方法
+![](pic/Test.jpg)
+
+
+
+同样测试一下`findUserByUsernameTest` ，如果运行结果如下就代表没问题：
+
+![](pic/Test3.jpg)
+
+
+
+### 提示：
+
+通过这个代码可以发现，其中有一部分代码是冗余的，我们可以将其封装成一个函数。
+
+```java
+public void createSqlSessionFactory() throws IOException {
+		// 配置文件
+		String resource = "SqlMapConfig.xml";
+		InputStream inputStream = Resources.getResourceAsStream(resource);
+		// 使用SqlSessionFactoryBuilder从xml配置文件中创建SqlSessionFactory
+		sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
+	}
+```
+
+
+
+## 注意：
+
+### 1、#{ } 和 ${ } 的区别
+
+> + `#{ }`表示一个占位符号，通过`#{ }`可以实现 `preparedStatement` 向占位符中设置值，自动进行java 类型和 jdbc 类型转换，`#{ }` 可以有效防止sql注入。`#{ }` 可以接收简单类型值或 pojo 属性值。 如果 `parameterType` 传输单个简单类型值，`#{ } `括号中可以是 value 或其它名称。
+> + `${ }` 表示拼接 sql 串，通过`${ }`可以将 parameterType 传入的内容拼接在 sql 中且不进行 jdbc 类型转换， `${ }`可以接收简单类型值或 pojo 属性值，如果 parameterType 传输单个简单类型值，${}括号中只能是 value。
+
+### 2、parameterType 和 resultType 区别 
+
+> + parameterType：指定输入参数类型，mybatis 通过 ognl 从输入对象中获取参数值拼接在 sql 中。
+> + resultType：指定输出结果类型，mybatis 将 sql 查询结果的一行记录数据映射为 resultType 指定类型的对象。
+
+### 3、selectOne 和 selectList 区别
+
+> + selectOne查询一条记录，如果使用selectOne查询多条记录则抛出异常：
+>
+>   org.apache.ibatis.exceptions.TooManyResultsException: Expected one result (or null) to bereturned by selectOne(), but found: 3 at org.apache.ibatis.session.defaults.DefaultSqlSession.selectOne(DefaultSqlSession.java:70)
+>
+> + selectList可以查询一条或多条记录。
+
+
+
+### 9、添加用户
+
++ 映射文件
+
+  在 User.xml 中加入：
+
+  ```xml
+  <!-- 添加用户 -->
+      <insert id="insetrUser" parameterType="cn.zhisheng.mybatis.po.User" > 
+         <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
+              select LAST_INSERT_ID()
+          </selectKey>
+          insert into user(username, birthday, sex, address)
+          values(#{username}, #{birthday}, #{sex}, #{address})
+      </insert>
+  ```
+
+  注意: 
+
+  > + selectKey将主键返回，需要再返回
+  > + 添加selectKey实现将主键返回
+  > + keyProperty:返回的主键存储在pojo中的哪个属性
+  > + order：selectKey的执行顺序，是相对与insert语句来说，由于mysql的自增原理执行完insert语句之后才将主键生成，所以这里selectKey的执行顺序为after
+  > + resultType:返回的主键是什么类型
+  > + LAST_INSERT_ID():是mysql的函数，返回auto_increment自增列新记录id值。
+
+然后在 `MybatisFirst.java` 中写一个测试函数，代码如下
+
+```java
+@Test
+    public void insetrUser() throws IOException, ParseException {
+        //Mybatis 配置文件
+        String resource = "SqlMapConfig.xml";
+        //得到配置文件流
+        InputStream inputStream = Resources.getResourceAsStream(resource);
+        //创建会话工厂,传入Mybatis的配置文件信息
+        SqlSessionFactory  sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
+        //通过工厂得到SqlSession
+        SqlSession sqlSession = sqlSessionFactory.openSession();
+        User user = new User();
+        SimpleDateFormat sdf = new SimpleDateFormat ("yyyy-MM-dd");
+        user.setUsername("田志声");
+        user.setSex("男");
+        user.setBirthday(sdf.parse("2016-11-29"));
+        user.setAddress("江西南昌");
+        sqlSession.insert("test.insetrUser", user);
+        sqlSession.commit();
+        //释放资源
+        sqlSession.close();
+    }
+```
+
+然后 run 一下，如果出现的结果如下，那么就是成功了。
+
+![](pic/1.jpg)
+
+同时数据库也能查询到刚插入的用户信息：
+
+![](pic/2.jpg)
+
+
+
+第七个视频看完了
+
+
+
+Mybatis 开发 dao 两种方法
 
 + 原始 dao 开发方法（程序需要编写 dao 接口和 dao 实现类）（掌握）
 + Mybatis 的 mapper 接口（相当于 dao 接口）代理开发方法（掌握）

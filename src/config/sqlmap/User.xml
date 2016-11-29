@@ -20,10 +20,31 @@
     <select id="findUserById" parameterType="int" resultType="cn.zhisheng.mybatis.po.User">
         select * from user where id = #{1}
     </select>
-    <!-- 自定义条件查询用户列表 -->
+    <!-- 自定义条件查询用户列表,可能返回多条
+         resultType：指定就是单条记录所映射的java对象类型
+         ${}:表示拼接sql串，将接收到的参数内容不加修饰的拼接在sql中
+         使用${}拼接sql，会引起sql注入
+         ${value}：接收输入参数的内容，如果传入类型是简单类型，${}中只能够使用value
+    -->
     <select id="findUserByUsername" parameterType="java.lang.String" resultType="cn.zhisheng.mybatis.po.User">
         select * from user where username like '%${value}%'
     </select>
 
+    <!-- 添加用户 -->
+    <insert id="insetrUser" parameterType="cn.zhisheng.mybatis.po.User" >
+        <!-- selectKey将主键返回，需要再返回
+             添加selectKey实现将主键返回
+             keyProperty:返回的主键存储在pojo中的哪个属性
+             order：selectKey的执行顺序，是相对与insert语句来说，由于mysql的自增原理执行完insert语句之后才将主键生成，所以这里selectKey的执行顺序为after
+             resultType:返回的主键是什么类型
+             LAST_INSERT_ID():是mysql的函数，返回auto_increment自增列新记录id值。
+
+        -->
+        <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
+            select LAST_INSERT_ID()
+        </selectKey>
+        insert into user(username, birthday, sex, address)
+        values(#{username}, #{birthday}, #{sex}, #{address})
+    </insert>
 
 </mapper>
