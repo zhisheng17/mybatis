@@ -369,9 +369,9 @@ public class User
 
 +  编写程序
 
-      `MybatisFirst.java`
+         `MybatisFirst.java`
 
-      ​
+         ​
 
 
 ```java
@@ -770,16 +770,218 @@ public void createSqlSessionFactory() throws IOException {
 
 
 
+### Mybatis 解决 jdbc 编程的问题
+
+1、  数据库链接创建、释放频繁造成系统资源浪费从而影响系统性能，如果使用数据库链接池可解决此问题。
+
+解决：在SqlMapConfig.xml中配置数据链接池，使用连接池管理数据库链接。
+
+2、  Sql语句写在代码中造成代码不易维护，实际应用sql变化的可能较大，sql变动需要改变java代码。
+
+解决：将Sql语句配置在XXXXmapper.xml文件中与java代码分离。
+
+3、  向sql语句传参数麻烦，因为sql语句的where条件不一定，可能多也可能少，占位符需要和参数一一对应。
+
+解决：Mybatis自动将java对象映射至sql语句，通过statement中的parameterType定义输入参数的类型。
+
+4、  对结果集解析麻烦，sql变化导致解析代码变化，且解析前需要遍历，如果能将数据库记录封装成pojo对象解析比较方便。
+
+解决：Mybatis自动将sql执行结果映射至java对象，通过statement中的resultType定义输出结果的类型。
+
+
+
+### Mybatis 与 Hibernate 不同
+
+Mybatis和hibernate不同，它不完全是一个ORM框架，因为MyBatis需要程序员自己编写Sql语句，不过mybatis可以通过XML或注解方式灵活配置要运行的sql语句，并将java对象和sql语句映射生成最终执行的sql，最后将sql执行的结果再映射生成java对象。
+
+ Mybatis学习门槛低，简单易学，程序员直接编写原生态sql，可严格控制sql执行性能，灵活度高，非常适合对关系数据模型要求不高的软件开发，例如互联网软件、企业运营类软件等，因为这类软件需求变化频繁，一但需求变化要求成果输出迅速。但是灵活的前提是mybatis无法做到数据库无关性，如果需要实现支持多种数据库的软件则需要自定义多套sql映射文件，工作量大。
+
+ Hibernate对象/关系映射能力强，数据库无关性好，对于关系模型要求高的软件（例如需求固定的定制化软件）如果用hibernate开发可以节省很多代码，提高效率。但是Hibernate的学习门槛高，要精通门槛更高，而且怎么设计O/R映射，在性能和对象模型之间如何权衡，以及怎样用好Hibernate需要具有很强的经验和能力才行。
+
+总之，按照用户的需求在有限的资源环境下只要能做出维护性、扩展性良好的软件架构都是好架构，所以框架只有适合才是最好。
 
 
 
 
-Mybatis 开发 dao 两种方法
+
+## Mybatis 开发 dao 
+
+### 两种方法
 
 + 原始 dao 开发方法（程序需要编写 dao 接口和 dao 实现类）（掌握）
 + Mybatis 的 mapper 接口（相当于 dao 接口）代理开发方法（掌握）
 
+### 需求
+
+将下边的功能实现Dao：
+
++ 根据用户id查询一个用户信息
++ 根据用户名称模糊查询用户信息列表
++ 添加用户信息
+
 Mybatis 配置文件 SqlMapConfig.xml
+
+### Sqlsession 的使用范围
+
+SqlSession 中封装了对数据库的操作，如：查询、插入、更新、删除等。
+
+通过 SqlSessionFactory 创建 SqlSession，而 SqlSessionFactory 是通过 SqlSessionFactoryBuilder 进行创建。
+
+### 1、SqlSessionFactoryBuilder
+
+SqlSessionFactoryBuilder 用于创建 SqlSessionFacoty，SqlSessionFacoty 一旦创建完成就不需要SqlSessionFactoryBuilder 了，因为 SqlSession 是通过 SqlSessionFactory 生产，所以可以将SqlSessionFactoryBuilder 当成一个工具类使用，最佳使用范围是方法范围即方法体内局部变量。
+
+### 2、SqlSessionFactory
+
+SqlSessionFactory 是一个接口，接口中定义了 openSession 的不同重载方法，SqlSessionFactory 的最佳使用范围是整个应用运行期间，一旦创建后可以重复使用，通常以单例模式管理 SqlSessionFactory。
+
+### 3、SqlSession
+
+SqlSession 是一个面向用户的接口， sqlSession 中定义了数据库操作，默认使用 DefaultSqlSession 实现类。
+
+执行过程如下：
+
+1）、  加载数据源等配置信息
+
+Environment environment = configuration.getEnvironment();
+
+2）、  创建数据库链接
+
+3）、  创建事务对象
+
+4）、  创建Executor，SqlSession 所有操作都是通过 Executor 完成，mybatis 源码如下：
+
+```java
+if (ExecutorType.BATCH == executorType) {
+      executor = newBatchExecutor(this, transaction);
+    } elseif (ExecutorType.REUSE == executorType) {
+      executor = new ReuseExecutor(this, transaction);
+    } else {
+      executor = new SimpleExecutor(this, transaction);
+    }
+if (cacheEnabled) {
+      executor = new CachingExecutor(executor, autoCommit);
+    }
+```
+
+5）、  SqlSession的实现类即 DefaultSqlSession，此对象中对操作数据库实质上用的是 Executor
+
+### 结论：
+
+         每个线程都应该有它自己的SqlSession实例。SqlSession的实例不能共享使用，它也是线程不安全的。因此最佳的范围是请求或方法范围(定义局部变量使用)。绝对不能将SqlSession实例的引用放在一个类的静态字段或实例字段中。
+
+         打开一个SqlSession；使用完毕就要关闭它。通常把这个关闭操作放到 finally 块中以确保每次都能执行关闭。如下：
+
+```jade
+SqlSession session = sqlSessionFactory.openSession();
+	try {
+ 		 // do work
+	} finally {
+  		session.close();
+}
+```
+
+
+
+## 原始 Dao 开发方法
+
+### 思路：
+
+需要程序员编写 Dao 接口和 Dao 实现类；
+
+需要在 Dao 实现类中注入 SqlsessionFactory ，在方法体内通过 SqlsessionFactory 创建 Sqlsession。 
+
+### Dao接口
+
+```java
+public interface UserDao    //dao接口，用户管理
+{
+    //根据id查询用户信息
+    public User findUserById(int id) throws Exception;
+
+    //添加用户信息
+    public void addUser(User user) throws Exception;
+
+    //删除用户信息
+    public void deleteUser(int id) throws Exception;
+}
+```
+
+### Dao 实现类
+
+```java
+public class UserDaoImpl  implements UserDao  //dao接口实现类
+{
+    //需要在 Dao 实现类中注入 SqlsessionFactory
+    //这里通过构造方法注入
+    private SqlSessionFactory sqlSessionFactory;
+    public UserDaoImpl(SqlSessionFactory sqlSessionFactory)
+    {
+        this.sqlSessionFactory = sqlSessionFactory;
+    }
+    @Override
+    public User findUserById(int id) throws Exception
+    {
+        //在方法体内通过 SqlsessionFactory 创建 Sqlsession
+        SqlSession sqlSession = sqlSessionFactory.openSession();
+        User user = sqlSession.selectOne("test.findUserById", id);
+        sqlSession.close();
+        return user;
+    }
+    @Override
+    public void insertUser(User user) throws Exception
+    {
+        //在方法体内通过 SqlsessionFactory 创建 Sqlsession
+        SqlSession sqlSession = sqlSessionFactory.openSession();
+        //执行插入的操作
+        sqlSession.insert("test.insetrUser", user);
+        //提交事务
+        sqlSession.commit();
+        //释放资源
+        sqlSession.close();
+    }
+    @Override
+    public void deleteUser(int id) throws Exception
+    {
+        //在方法体内通过 SqlsessionFactory 创建 Sqlsession
+        SqlSession sqlSession = sqlSessionFactory.openSession();
+        sqlSession.delete("test.deleteUserById", id);
+        //提交事务
+        sqlSession.commit();
+        sqlSession.close();
+    }
+}
+```
+
+### 问题
+
+原始Dao开发中存在以下问题：
+
++ Dao方法体存在重复代码：通过 SqlSessionFactory 创建 SqlSession，调用 SqlSession 的数据库操作方法
++ 调用 sqlSession 的数据库操作方法需要指定 statement 的i d，这里存在硬编码，不得于开发维护。
++ 调用 sqlSession 的数据库操作方法时传入的变量，由于 sqlsession 方法使用泛型，即使变量类型传入错误，在编译阶段也不报错，不利于程序员开发。
+
+
+
+
+
+## Mybatis 的 mapper 接口
+
+### 思路
+
+只需要程序员编写Mapper接口（相当于Dao接口）
+
+
+
+
+
+
+
+
+
+
+
+
 
 Mybatis 核心：
 
