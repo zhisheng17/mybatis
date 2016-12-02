@@ -32,7 +32,7 @@ public class UserMapperTest
         InputStream inputStream = Resources.getResourceAsStream(resource);
 
         //创建会话工厂,传入Mybatis的配置文件信息
-        SqlSessionFactory  sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
+        sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
     }
 
     @Test
