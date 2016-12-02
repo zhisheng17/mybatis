@@ -369,9 +369,9 @@ public class User
 
 +  编写程序
 
-         `MybatisFirst.java`
+           `MybatisFirst.java`
 
-         ​
+           ​
 
 
 ```java
@@ -969,7 +969,109 @@ public class UserDaoImpl  implements UserDao  //dao接口实现类
 
 ### 思路
 
-只需要程序员编写Mapper接口（相当于Dao接口）
+程序员需要编写 mapper.xml 映射文件
+
+只需要程序员编写Mapper接口（相当于Dao接口），需遵循一些开发规范，mybatis 可以自动生成 mapper 接口类代理对象。
+
+开发规范：
+
++ 在 mapper.xml 中 namespace 等于 mapper 接口地址
+
+  ```xml
+  <mapper namespace="cn.zhisheng.mybatis.mapper.UserMapper"></mapper>
+  ```
+
++ 在 xxxmapper.java 接口中的方法名要与 xxxMapper.xml 中 statement 的 id 一致。
+
++ 在 xxxmapper.java 接口中的输入参数类型要与 xxxMapper.xml 中 statement 的 parameterType 指定的参数类型一致。
+
++ 在 xxxmapper.java 接口中的返回值类型要与 xxxMapper.xml 中 statement 的 resultType 指定的类型一致。
+
+  `UserMapper.java`
+
+  ```java
+  //根据id查询用户信息
+      public User findUserById(int id) throws Exception;
+  ```
+
+  `UserMapper.xml`
+
+  ```xml
+  <select id="findUserById" parameterType="int" resultType="cn.zhisheng.mybatis.po.User">
+          select * from user where id = #{1}
+  </select>
+  ```
+
+### 总结：
+
+以上的开发规范主要是对下边的代码进行统一的生成：
+
+```java
+User user = sqlSession.selectOne("test.findUserById", id);
+sqlSession.insert("test.insetrUser", user);
+sqlSession.delete("test.deleteUserById", id);
+List<User> list = sqlSession.selectList("test.findUserByName", username);
+```
+
+### 测试
+
+测试之前记得在 SqlMapConfig.xml 文件中添加加载映射文件 UserMapper.xml：
+
+```xml
+<mapper resource="mapper/UserMapper.xml"/>
+```
+
+测试代码：
+
+```java
+public class UserMapperTest
+{
+    private SqlSessionFactory sqlSessionFactory;
+    //此方法是在 testFindUserById 方法之前执行的
+    @Before
+    public void setup() throws Exception
+    {
+        //创建sqlSessionFactory
+        //Mybatis 配置文件
+        String resource = "SqlMapConfig.xml";
+        //得到配置文件流
+        InputStream inputStream = Resources.getResourceAsStream(resource);
+        //创建会话工厂,传入Mybatis的配置文件信息
+        SqlSessionFactory  sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
+    }
+    @Test
+    public void testFindUserById() throws Exception
+    {
+        SqlSession sqlSession = sqlSessionFactory.openSession();
+        //创建usermapper对象,mybatis自动生成代理对象
+        UserMapper userMapper = sqlSession.getMapper(UserMapper.class);
+        //调用UserMapper的方法
+        User user = userMapper.findUserById(1);
+        System.out.println(user);
+    }
+}
+```
+
+
+
+### 代理对象内部调用 selectOne 或者 selectList
+
++ 如果 mapper 方法返回单个 pojo 对象（非集合对象），代理对象内部通过 selectOne 查询数据库
++ 如果 mapper 方法返回集合对象，代理对象内部通过 selectList 查询数据库
+
+
+###  mapper接口方法参数只能有一个是否影响系统开发
+
+> mapper 接口方法参数只能有一个，系统是否不利于维护？
+>
+> 系统框架中，dao层的代码是被业务层公用的。
+>
+> 即使 mapper 接口只有一个参数，可以使用包装类型的 pojo 满足不同的业务方法的需求。
+>
+> 注意：持久层方法的参数可以包装类型、map.... ，service方法中不建议使用包装类型。（不利于业务层的可扩展性）
+
+
+
 
 
 
