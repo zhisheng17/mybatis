@@ -369,9 +369,9 @@ public class User
 
 +  编写程序
 
-           `MybatisFirst.java`
+               `MybatisFirst.java`
 
-           ​
+               ​
 
 
 ```java
@@ -953,6 +953,40 @@ public class UserDaoImpl  implements UserDao  //dao接口实现类
 }
 ```
 
+### 测试
+
+```java
+public class UserDaoImplTest
+{
+    private SqlSessionFactory sqlSessionFactory;
+    //此方法是在 testFindUserById 方法之前执行的
+    @Before
+    public void setup() throws Exception
+    {
+        //创建sqlSessionFactory
+        //Mybatis 配置文件
+        String resource = "SqlMapConfig.xml";
+        //得到配置文件流
+        InputStream inputStream = Resources.getResourceAsStream(resource);
+        //创建会话工厂,传入Mybatis的配置文件信息
+        sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
+    }
+    @Test
+    public void testFindUserById() throws Exception
+    {
+        //创建UserDao的对象
+        UserDao userDao = new UserDaoImpl(sqlSessionFactory);
+        //调用UserDao方法
+        User user = userDao.findUserById(1);
+        System.out.println(user);
+    }
+}
+```
+
+通过id查询用户信息测试结果如下：（其他的可以自己在写测试代码，原理类似）
+
+![](pic/dao开发.jpg)
+
 ### 问题
 
 原始Dao开发中存在以下问题：
@@ -1037,7 +1071,7 @@ public class UserMapperTest
         //得到配置文件流
         InputStream inputStream = Resources.getResourceAsStream(resource);
         //创建会话工厂,传入Mybatis的配置文件信息
-        SqlSessionFactory  sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
+        sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
     }
     @Test
     public void testFindUserById() throws Exception
@@ -1052,7 +1086,13 @@ public class UserMapperTest
 }
 ```
 
+通过id查询用户信息测试结果如下：（其他的请自己根据上下文写测试代码，或者去看我 [Github-Mybatis学习笔记](https://github.com/zhisheng17/mybatis) 上看我这个项目的全部代码）
 
+![](pic/mapper开发.jpg)
+
+通过姓名查询用户信息：
+
+![](pic/mapper开发2.jpg)
 
 ### 代理对象内部调用 selectOne 或者 selectList
 
@@ -1072,13 +1112,219 @@ public class UserMapperTest
 
 
 
+## SqlMapConfig.xml 文件
+
+Mybatis 的全局配置变量，配置内容和顺序如下：
+
+properties（属性）
+
+settings（全局配置参数）
+
+typeAliases（类型别名）
+
+typeHandlers（类型处理器）
+
+objectFactory（对象工厂）
+
+plugins（插件）
+
+environments（环境集合属性对象）
+
+​	environment（环境子属性对象）
+
+​		transactionManager（事务管理）
+
+​		dataSource（数据源）
+
+mappers（映射器）
+
+### properties 属性
+
+需求：将数据库连接参数单独配置在 db.properties 中，只需要在 SqlMapConfig.xml 中加载该配置文件 db.properties 的属性值。在 SqlMapConfig.xml 中就不需要直接对数据库的连接参数进行硬编码了。方便以后对参数进行统一的管理，其他的xml文件可以引用该 db.properties 。
+
+`db.properties`
+
+```properties
+jdbc.driver=com.mysql.jdbc.Driver
+jdbc.url=jdbc:mysql://localhost:3306/mybatis_test?characterEncoding=utf-8
+jdbc.username=root
+jdbc.password=root
+```
+
+那么 SqlMapConfig.xml 中的配置变成如下：
+
+```xml
+<!--加载配置文件-->
+    <properties resource="db.properties"></properties>
+    <!-- 和spring整合后 environments配置将废除-->
+    <environments default="development">
+        <environment id="development">
+            <!-- 使用jdbc事务管理,事务由 Mybatis 控制-->
+            <transactionManager type="JDBC" />
+            <!-- 数据库连接池-->
+            <dataSource type="POOLED">
+                <property name="driver" value="${jdbc.driver}" />
+                <property name="url" value="${jdbc.url}" />
+                <property name="username" value="${jdbc.username}" />
+                <property name="password" value="${jdbc.password}" />
+            </dataSource>
+        </environment>
+    </environments>
+```
+
+配置完成后我们测试一下是否能够和刚才一样的能够成功呢？那么我就先在db.properties中把数据库密码故意改错，看是否是正确的？不出意外的话是会报错的。
+
+![](pic/报错.jpg)
+
+注意： MyBatis 将按照下面的顺序来加载属性：
+
++ 在 properties 元素体内定义的属性首先被读取。 
+
+
++ 然后会读取 properties 元素中 resource 或 url 加载的属性，它会覆盖已读取的同名属性。 
+
+
++ 最后读取 parameterType 传递的属性，它会覆盖已读取的同名属性。
+
+ 因此，通过parameterType传递的属性具有最高优先级，resource或 url 加载的属性次之，最低优先级的是 properties 元素体内定义的属性。
+
+建议：
+
++ 不要在 properties 元素体内添加任何属性值，只将属性值定义在 db.properties 文件之中。
++ 在  db.properties 文件之中定义的属性名要有一定的特殊性。如 xxx.xxx.xxx
 
 
 
+###  settings（全局配置参数）
+
+Mybatis 框架在运行时可以调整一些运行参数
+
+比如：开启二级缓存、开启延迟加载。。。
+
+![](pic/setting.jpg)
 
 
 
+### typeAliases（类型别名）
 
+需求：
+
+在mapper.xml中，定义很多的statement，statement需要parameterType指定输入参数的类型、需要resultType指定输出结果的映射类型。
+
+如果在指定类型时输入类型全路径，不方便进行开发，可以针对parameterType或resultType指定的类型定义一些别名，在mapper.xml中通过别名定义，方便开发。
+
+**Mybatis支持的别名：**
+
+|     别名     |   映射的类型    |
+| :--------: | :--------: |
+|   _byte    |    byte    |
+|   _long    |    long    |
+|   _short   |   short    |
+|    _int    |    int     |
+|  _integer  |    int     |
+|  _double   |   double   |
+|   _float   |   float    |
+|  _boolean  |  boolean   |
+|   string   |   String   |
+|    byte    |    Byte    |
+|    long    |    Long    |
+|   short    |   Short    |
+|    int     |  Integer   |
+|  integer   |  Integer   |
+|   double   |   Double   |
+|   float    |   Float    |
+|  boolean   |  Boolean   |
+|    date    |    Date    |
+|  decimal   | BigDecimal |
+| bigdecimal | BigDecimal |
+
+**自定义别名：**
+
+在 SqlMapConfig.xml 中配置：(设置别名)
+
+```xml
+<typeAliases>
+	<!-- 单个别名定义 -->
+	<typeAlias alias="user" type="cn.zhisheng.mybatis.po.User"/>
+	<!-- 批量别名定义，扫描整个包下的类，别名为类名（首字母大写或小写都可以） -->
+	<package name="cn.zhisheng.mybatis.po"/>
+	<package name="其它包"/>
+</typeAliases>
+```
+
+在 UserMapper.xml 中引用别名：( resultType 为 user )
+
+```xml
+<select id="findUserById" parameterType="int" resultType="user">
+        select * from user where id = #{id}
+</select>
+```
+
+测试结果：
+
+![](pic/Test4.jpg)
+
+
+
+### typeHandlers（类型处理器）
+
+mybatis中通过typeHandlers完成jdbc类型和java类型的转换。
+
+ 通常情况下，mybatis提供的类型处理器满足日常需要，不需要自定义.
+
+mybatis支持类型处理器：
+
+|          类型处理器          |     **Java**类型      |            **JDBC**类型             |
+| :---------------------: | :-----------------: | :-------------------------------: |
+|   BooleanTypeHandler    |   Boolean，boolean   |             任何兼容的布尔值              |
+|     ByteTypeHandler     |      Byte，byte      |           任何兼容的数字或字节类型            |
+|    ShortTypeHandler     |     Short，short     |            任何兼容的数字或短整型            |
+|   IntegerTypeHandler    |     Integer，int     |            任何兼容的数字和整型             |
+|     LongTypeHandler     |      Long，long      |            任何兼容的数字或长整型            |
+|    FloatTypeHandler     |     Float，float     |          任何兼容的数字或单精度浮点型           |
+|    DoubleTypeHandler    |    Double，double    |          任何兼容的数字或双精度浮点型           |
+|  BigDecimalTypeHandler  |     BigDecimal      |          任何兼容的数字或十进制小数类型          |
+|    StringTypeHandler    |       String        |          CHAR和VARCHAR类型           |
+|     ClobTypeHandler     |       String        |        CLOB和LONGVARCHAR类型         |
+|   NStringTypeHandler    |       String        |         NVARCHAR和NCHAR类型          |
+|    NClobTypeHandler     |       String        |              NCLOB类型              |
+|  ByteArrayTypeHandler   |       byte[]        |            任何兼容的字节流类型             |
+|     BlobTypeHandler     |       byte[]        |       BLOB和LONGVARBINARY类型        |
+|     DateTypeHandler     |   Date（java.util）   |            TIMESTAMP类型            |
+|   DateOnlyTypeHandler   |   Date（java.util）   |              DATE类型               |
+|   TimeOnlyTypeHandler   |   Date（java.util）   |              TIME类型               |
+| SqlTimestampTypeHandler | Timestamp（java.sql） |            TIMESTAMP类型            |
+|   SqlDateTypeHandler    |   Date（java.sql）    |              DATE类型               |
+|   SqlTimeTypeHandler    |   Time（java.sql）    |              TIME类型               |
+|    ObjectTypeHandler    |         任意          |             其他或未指定类型              |
+|     EnumTypeHandler     |    Enumeration类型    | VARCHAR-任何兼容的字符串类型，作为代码存储（而不是索引）。 |
+
+
+
+### mappers（映射器）
+
++ <mapper resource=" " />
+
+  使用相对于类路径的资源，如：<mapper resource="sqlmap/User.xml" />
+
++ <mapper url=" " />
+
+  使用完全限定路径
+  如：<mapper url="file://D:\workspace\mybatis\config\sqlmap\User.xml" />
+
++ <mapper class=" " />
+
+  使用 mapper 接口类路径
+
+  如：<mapper class="cn.zhisheng.mybatis.mapper.UserMapper"/>
+
+  注意：此种方法要求 mapper 接口名称和 mapper 映射文件名称相同，且放在同一个目录中。
+
++ <mapper name=" " />
+
+  注册指定包下的所有mapper接口
+  如：<package name="cn.zhisheng.mybatis.mapper"/>
+  注意：此种方法要求 mapper 接口名称和 mapper 映射文件名称相同，且放在同一个目录中。
 
 
 

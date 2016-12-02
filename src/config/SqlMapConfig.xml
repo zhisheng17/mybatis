@@ -3,6 +3,22 @@
         PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-config.dtd">
 <configuration>
+    <!--加载配置文件-->
+    <properties resource="db.properties">
+        <!--在properties中还可以配置一些属性名和属性值-->
+        <!--<property name="" value=""/>   -->
+    </properties>
+
+    <!--别名定义-->
+    <typeAliases>
+        <!-- 单个别名定义 -->
+        <typeAlias alias="user" type="cn.zhisheng.mybatis.po.User"/>
+        <!-- 批量别名定义，扫描整个包下的类，别名为类名（首字母大写或小写都可以） -->
+        <package name="cn.zhisheng.mybatis.po"/>
+        <package name="其它包"/>
+    </typeAliases>
+
+
     <!-- 和spring整合后 environments配置将废除-->
     <environments default="development">
         <environment id="development">
@@ -10,10 +26,10 @@
             <transactionManager type="JDBC" />
             <!-- 数据库连接池-->
             <dataSource type="POOLED">
-                <property name="driver" value="com.mysql.jdbc.Driver" />
-                <property name="url" value="jdbc:mysql://localhost:3306/mybatis_test?characterEncoding=utf-8" />
-                <property name="username" value="root" />
-                <property name="password" value="root" />
+                <property name="driver" value="${jdbc.driver}" />
+                <property name="url" value="${jdbc.url}" />
+                <property name="username" value="${jdbc.username}" />
+                <property name="password" value="${jdbc.password}" />
             </dataSource>
         </environment>
     </environments>

@@ -18,8 +18,8 @@
         resultType：表示指定sql输出结果的所映射的java对象类型
     -->
     <!-- 根据id获取用户信息 -->
-    <select id="findUserById" parameterType="int" resultType="cn.zhisheng.mybatis.po.User">
-        select * from user where id = #{1}
+    <select id="findUserById" parameterType="int" resultType="user">
+        select * from user where id = #{id}
     </select>
     <!-- 自定义条件查询用户列表,可能返回多条
          resultType：指定就是单条记录所映射的java对象类型
