@@ -369,9 +369,9 @@ public class User
 
 +  编写程序
 
-                 `MybatisFirst.java`
+                   `MybatisFirst.java`
 
-                 ​
+                   ​
 
 
 ```java
@@ -1493,27 +1493,250 @@ Mapper.xml映射文件中定义了操作数据库的sql，每个sql是一个stat
     public List<User> findUserByUsername(String userName) throws  Exception;
 ```
 
- 生成的动态代理对象中是根据mapper方法的返回值类型确定是调用selectOne(返回单个对象调用)还是selectList （返回集合对象调用）。
+ resultType总结：
 
+输出pojo对象和输出pojo列表在sql中定义的resultType是一样的。
 
+返回单个pojo对象要保证sql查询出来的结果集为单条，内部使用session.selectOne方法调用，mapper接口使用pojo对象作为方法返回值。
 
-
-
-
-
-
+返回pojo列表表示查询出来的结果集可能为多条，内部使用session.selectList方法，mapper接口使用List<pojo>对象作为方法返回值。
 
 + **resultMap**
 
 
+resultType 可以指定 pojo 将查询结果映射为 pojo，但需要 pojo 的属性名和 sql 查询的列名一致方可映射成功。
+
+如果sql查询字段名和pojo的属性名不一致，可以通过resultMap将字段名和属性名作一个对应关系 ，resultMap实质上还需要将查询结果映射到pojo对象中。
+
+resultMap可以实现将查询结果映射为复杂类型的pojo，比如在查询结果映射对象中包括pojo和list实现一对一查询和一对多查询。
+
+使用方法：
+
+1、定义 resultMap
+
+2、使用 resultMap 作为 statement 的输出映射类型
+
+将下面的 sql 使用 User 完成映射
+
+```sql
+select id id_, username username_ from user where id = #{value}
+```
+
+User 类中属性名和上边查询的列名不一致。
+
+所以需要：
+
+1、定义 resultMap 
+
+```xml
+<!--定义 resultMap
+    将select id id_, username username_ from user where id = #{value} 和User类中的属性做一个映射关系
+    type: resultMap最终映射的java对象类型
+    id:对resultMap的唯一标识
+    -->
+    <resultMap id="userResultMap" type="user">
+        <!--id表示查询结果中的唯一标识
+        column：查询出来的列名
+        property：type指定pojo的属性名
+        最终resultMap对column和property做一个映射关系（对应关系）
+        -->
+        <id column="id_" property="id"/>
+
+        <!--result: 对普通结果映射定义
+        column：查询出来的列名
+        property：type指定pojo的属性名
+        最终resultMap对column和property做一个映射关系（对应关系）
+        -->
+        <result column="username_" property="username"/>
+    </resultMap>
+```
+
+2、使用 resultMap 作为 statement 的输出映射类型
+
+```xml
+<!--使用 resultMap 作为输出映射类型
+        resultMap="userResultMap":其中的userResultMap就是我们刚才定义的 resultMap 的id值,如果这个resultMap在其他的mapper文件中，前边须加上namespace -->
+    <select id="findUserByIdResultMap" parameterType="int" resultMap="userResultMap">
+        select id id_, username username_ from user where id = #{value}
+    </select>
+```
+
+3、`UserMapper.java`
+
+```
+//根据id查询用户信息，使用 resultMap 输出
+public User findUserByIdResultMap(int id) throws Exception;
+```
+
+4、测试
+
+```java
+//测试根据id查询用户信息，使用 resultMap 输出
+    @Test
+    public void testFindUserByIdResultMap() throws Exception
+    {
+        SqlSession sqlSession = sqlSessionFactory.openSession();
+        //创建usermapper对象,mybatis自动生成代理对象
+        UserMapper userMapper = sqlSession.getMapper(UserMapper.class);
+        //调用UserMapper的方法
+        User user = userMapper.findUserByIdResultMap(1);
+        System.out.println(user);
+    }
+```
+
+5、测试结果
+
+![](pic/Test7.jpg)
 
 
 
+## 动态 SQL
+
+通过mybatis提供的各种标签方法实现动态拼接sql。
+
+需求：
+
+用户信息综合查询列表和用户信息查询列表总数这两个 statement的定义使用动态sql。
+
+对查询条件进行判断，如果输入的参数不为空才进行查询条件拼接。
+
+`UserMapper.xml` (findUserList的配置如下，那么findUserCount的也是一样的，这里就不全部写出来了)
+
+```xml
+<select id="findUserList" parameterType="cn.zhisheng.mybatis.po.UserQueryVo" resultType="cn.zhisheng.mybatis.po.UserCustom">
+        select * from user
+        <!--where可以自动的去掉条件中的第一个and-->
+        <where>
+            <if test="userCustom != null">
+                <if test="userCustom.sex != null and userCustom.sex != ''">
+                    and user.sex = #{userCustom.sex}
+                </if>
+                <if test="userCustom.username != null">
+                    and user.username like  '%${userCustom.username}%'
+                </if>
+            </if>
+        </where>
+    </select>
+```
+
+测试代码：因为设置了动态的sql，如果不设置某个值，那么条件就不会拼接在sql上
+
+所以我们就注释掉设置username的语句
+
+```java
+//userCustom.setUsername("张小明");
+```
+
+测试结果：
+
+![](pic/Test8.jpg)
+
+### Sql 片段
+
+通过上面的其实看到在 where sql语句中有很多重复代码，我们可以将其抽取出来，组成一个sql片段，其他的statement就可以引用这个sql片段，利于系统的开发。
+
+这里我们就拿上边sql 中的where定义一个sq片段如下：
+
+```xml
+ <!--sql片段
+    id:唯一标识
+    经验：是基于单表来定义sql片段，这样的话sql片段的可重用性才高
+    一般不包含where
+    -->
+    <sql id="query_user_where">
+        <if test="userCustom != null">
+            <if test="userCustom.sex != null and userCustom.sex != ''">
+                and user.sex = #{userCustom.sex}
+            </if>
+            <if test="userCustom.username != null">
+                and user.username like  '%${userCustom.username}%'
+            </if>
+        </if>
+    </sql>
+```
+
+那么我们该怎样引用这个sql片段呢？如下：
+
+```xml
+select * from user
+        <where>
+        <!--refid: 指定sql片段的id，如果是写在其他的mapper文件中，则需要在前面加上namespace-->
+            <include refid="query_user_where"/>
+        </where>
+```
+
+测试的话还是那样了，就不继续说了，前面已经说了很多了。
 
 
 
+### foreach
 
+向sql传递数组或List，mybatis使用foreach解析
 
+需求：
+
+在用户查询列表和查询总数的statement中增加多个id输入查询。
+
+sql语句如下：
+
+```sql
+SELECT * FROM USER WHERE id=1 OR id=10 ORid=16
+或者
+SELECT * FROM USER WHERE id IN(1,10,16)
+```
+
+在输入参数类型中添加 List<Integer> ids 传入多个 id
+
+```java
+public class UserQueryVo    //用户包装类型
+{
+    //传入多个id
+    private List<Integer> ids;
+}
+```
+
+修改 UserMapper.xml文件
+
+WHERE id=1 OR id=10 OR id=16
+
+在查询条件中，查询条件定义成一个sql片段，需要修改sql片段。
+
+```xml
+<if test="ids!=null">
+			<!-- 使用 foreach遍历传入ids
+			collection：指定输入 对象中集合属性
+			item：每个遍历生成对象中
+			open：开始遍历时拼接的串
+			close：结束遍历时拼接的串
+			separator：遍历的两个对象中需要拼接的串
+			 -->
+			 <!-- 使用实现下边的sql拼接：
+			  AND (id=1 OR id=10 OR id=16) 
+			  -->
+			<foreach collection="ids" item="user_id" open="AND (" close=")" separator="or">
+				<!-- 每个遍历需要拼接的串 -->
+				id=#{user_id}
+			</foreach>
+			
+			<!-- 实现  “ and id IN(1,10,16)”拼接 -->
+			<!-- <foreach collection="ids" item="user_id" open="and id IN(" close=")" separator=",">
+				每个遍历需要拼接的串
+				#{user_id}
+			</foreach> -->	
+			</if>
+```
+
+测试代码：
+
+```java
+ //传入多个id
+List<Integer> ids = new ArrayList<>();
+ids.add(1);
+ids.add(10);
+ids.add(16);
+//将ids传入statement中
+userQueryVo.setIds(ids);
+```
 
 
 

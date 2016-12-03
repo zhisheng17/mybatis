@@ -24,6 +24,8 @@ public interface UserMapper     //mapper接口，相当于dao接口
     public List<User> findUserByUsername(String userName) throws  Exception;
 
 
+    //根据id查询用户信息，使用 resultMap 输出
+    public User findUserByIdResultMap(int id) throws Exception;
 
     //插入用户信息
     public void insetrUser(User user) throws Exception;
