@@ -1,6 +1,8 @@
 package cn.zhisheng.mybatis.mapper;
 
 import cn.zhisheng.mybatis.po.User;
+import cn.zhisheng.mybatis.po.UserCustom;
+import cn.zhisheng.mybatis.po.UserQueryVo;
 
 import java.util.List;
 
@@ -9,6 +11,12 @@ import java.util.List;
  */
 public interface UserMapper     //mapper接口，相当于dao接口
 {
+    //用户信息综合查询
+    public List<UserCustom> findUserList(UserQueryVo userQueryVo) throws Exception;
+
+    //用户信息综合查询总数
+    public int findUserCount(UserQueryVo userQueryVo) throws Exception;
+
     //根据id查询用户信息
     public User findUserById(int id) throws Exception;
 

@@ -369,9 +369,9 @@ public class User
 
 +  编写程序
 
-               `MybatisFirst.java`
+                 `MybatisFirst.java`
 
-               ​
+                 ​
 
 
 ```java
@@ -1325,6 +1325,202 @@ mybatis支持类型处理器：
   注册指定包下的所有mapper接口
   如：<package name="cn.zhisheng.mybatis.mapper"/>
   注意：此种方法要求 mapper 接口名称和 mapper 映射文件名称相同，且放在同一个目录中。
+
+
+
+
+## Mapper.xml 映射文件
+
+Mapper.xml映射文件中定义了操作数据库的sql，每个sql是一个statement，映射文件是mybatis的核心。
+
+### 输入映射
+
+通过 parameterType 指定输入参数的类型，类型可以是简单类型、hashmap、pojo的包装类型。
+
+**传递 pojo 包装对象** （重点）
+
+开发中通过pojo传递查询条件 ，查询条件是综合的查询条件，不仅包括用户查询条件还包括其它的查询条件（比如将用户购买商品信息也作为查询条件），这时可以使用包装对象传递输入参数。
+
++ 定义包装对象
+
+  定义包装对象将查询条件(pojo)以类组合的方式包装起来。
+
+  `UserQueryVo.java`
+
+  ```java
+  public class UserQueryVo    //用户包装类型
+  {
+      //在这里包装所需要的查询条件
+      //用户查询条件
+      private UserCustom userCustom;
+      public UserCustom getUserCustom()
+      {
+          return userCustom;
+      }
+      public void setUserCustom(UserCustom userCustom)
+      {
+          this.userCustom = userCustom;
+      }
+      //还可以包装其他的查询条件，比如订单、商品
+  }
+  ```
+
+  `UserCustomer.java`
+
+  ```java
+  public class UserCustom extends User    //用户的扩展类
+  {
+      //可以扩展用户的信息
+  }
+  ```
+
++ `UserMapper.xml` 文件
+
+  ```xml
+  <!--用户信息综合查询
+      #{userCustom.sex} :取出pojo包装对象中的性别值
+      #{userCustom.username} :取出pojo包装对象中的用户名称
+      -->
+      <select id="findUserList" parameterType="cn.zhisheng.mybatis.po.UserQueryVo" resultType="cn.zhisheng.mybatis.po.UserCustom">
+          select * from user where user.sex = #{userCustom.sex} and user.username like  '%${userCustom.username}%'
+      </select>
+  ```
+
++ UserMapper.java
+
+  ```java
+  //用户信息综合查询
+  public List<UserCustom> findUserList(UserQueryVo userQueryVo) throws Exception;
+  ```
+
++ 测试代码
+
+  ```java
+  //测试用户信息综合查询
+      @Test
+      public void testFindUserList() throws Exception
+      {
+          SqlSession sqlSession = sqlSessionFactory.openSession();
+          //创建usermapper对象,mybatis自动生成代理对象
+          UserMapper userMapper = sqlSession.getMapper(UserMapper.class);
+          //创建包装对象，设置查询条件
+          UserQueryVo userQueryVo = new UserQueryVo();
+          UserCustom userCustom = new UserCustom();
+          userCustom.setSex("男");
+          userCustom.setUsername("张小明");
+          userQueryVo.setUserCustom(userCustom);
+          //调用UserMapper的方法
+          List<UserCustom> list = userMapper.findUserList(userQueryVo);   
+          System.out.println(list);
+      }
+  ```
+
++ 测试结果
+
+  ![](pic/Test5.jpg)
+
+
+
+### 输出映射
+
++ **resultType**
+
+> + **使用 resultType 进行输出映射，只有查询出来的列名和 pojo 中的属性名一致，该列才可以映射成功。**
+> + 如果查询出来的列名和 pojo 中的属性名全部不一致，没有创建 pojo 对象。
+> + 只要查询出来的列名和 pojo 中的属性有一个一致，就会创建 pojo 对象。
+
+#### 输出简单类型
+
+需求：用户信息综合查询列表总数，通过查询总数和上边用户综合查询列表才可以实现分页
+
+实现：
+
+```xml
+<!--用户信息综合查询总数
+    parameterType:指定输入的类型和findUserList一样
+    resultType:输出结果类型为 int
+    -->
+    <select id="findUserCount" parameterType="cn.zhisheng.mybatis.po.UserQueryVo" resultType="int">
+      select count(*) from user where user.sex = #{userCustom.sex} and user.username like  '%${userCustom.username}%'
+    </select>
+```
+
+```java
+ //用户信息综合查询总数
+    public int findUserCount(UserQueryVo userQueryVo) throws Exception;
+```
+
+```java
+//测试用户信息综合查询总数
+    @Test
+    public void testFindUserCount() throws Exception
+    {
+        SqlSession sqlSession = sqlSessionFactory.openSession();
+        //创建usermapper对象,mybatis自动生成代理对象
+        UserMapper userMapper = sqlSession.getMapper(UserMapper.class);
+        //创建包装对象，设置查询条件
+        UserQueryVo userQueryVo = new UserQueryVo();
+        UserCustom userCustom = new UserCustom();
+        userCustom.setSex("男");
+        userCustom.setUsername("张小明");
+        userQueryVo.setUserCustom(userCustom);
+        //调用UserMapper的方法
+        System.out.println(userMapper.findUserCount(userQueryVo));
+    }
+```
+
+![](pic/Test6.jpg)
+
+注意：查询出来的结果集只有一行且一列，可以使用简单类型进行输出映射。
+
+**输出pojo对象和pojo列表**
+
+不管是输出的pojo单个对象还是一个列表（list中包括pojo），在mapper.xml中resultType指定的类型是一样的。
+
+在mapper.java指定的方法返回值类型不一样：
+
+1、输出单个pojo对象，方法返回值是单个对象类型
+
+```java
+//根据id查询用户信息
+    public User findUserById(int id) throws Exception;
+```
+
+2、输出pojo对象list，方法返回值是List<Pojo>
+
+```java
+  //根据用户名查询用户信息
+    public List<User> findUserByUsername(String userName) throws  Exception;
+```
+
+ 生成的动态代理对象中是根据mapper方法的返回值类型确定是调用selectOne(返回单个对象调用)还是selectList （返回集合对象调用）。
+
+
+
+
+
+
+
+
+
++ **resultMap**
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

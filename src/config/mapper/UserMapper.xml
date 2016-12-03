@@ -9,6 +9,28 @@
 <mapper namespace="cn.zhisheng.mybatis.mapper.UserMapper">
 
     <!--在映射文件中配置很多sql语句-->
+
+    <!--用户信息综合查询
+    #{userCustom.sex} :取出pojo包装对象中的性别值
+    #{userCustom.username} :取出pojo包装对象中的用户名称
+
+    -->
+    <select id="findUserList" parameterType="cn.zhisheng.mybatis.po.UserQueryVo" resultType="cn.zhisheng.mybatis.po.UserCustom">
+
+        select * from user where user.sex = #{userCustom.sex} and user.username like  '%${userCustom.username}%'
+    </select>
+
+
+    <!--用户信息综合查询总数
+    parameterType:指定输入的类型和findUserList一样
+    resultType:输出结果类型为 int
+    -->
+    <select id="findUserCount" parameterType="cn.zhisheng.mybatis.po.UserQueryVo" resultType="int">
+
+      select count(*) from user where user.sex = #{userCustom.sex} and user.username like  '%${userCustom.username}%'
+
+    </select>
+
     <!--通过select执行数据库查询
         id:标识映射文件中的sql
         将sql语句封装到mappedStatement对象中，所以id称为Statement的id
@@ -27,7 +49,7 @@
          使用${}拼接sql，会引起sql注入
          ${value}：接收输入参数的内容，如果传入类型是简单类型，${}中只能够使用value
     -->
-    <select id="findUserByUsername" parameterType="java.lang.String" resultType="cn.zhisheng.mybatis.po.User">
+    <select id="findUserByUsername" parameterType="java.lang.String" resultType="user">
         select * from user where username like '%${value}%'
     </select>
 
