@@ -11,6 +11,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -80,8 +81,16 @@ public class UserMapperTest
         //创建包装对象，设置查询条件
         UserQueryVo userQueryVo = new UserQueryVo();
         UserCustom userCustom = new UserCustom();
+        //因为设置了动态的sql，如果不设置某个值，那么条件就不会拼接在sql上
         userCustom.setSex("男");
-        userCustom.setUsername("张小明");
+        //userCustom.setUsername("张小明");
+
+        //传入多个id
+        List<Integer> ids = new ArrayList<>();
+        ids.add(1);
+        ids.add(10);
+        ids.add(16);
+        userQueryVo.setIds(ids);
         userQueryVo.setUserCustom(userCustom);
 
         //调用UserMapper的方法
@@ -113,5 +122,21 @@ public class UserMapperTest
         System.out.println(userMapper.findUserCount(userQueryVo));
     }
 
+
+    //测试根据id查询用户信息，使用 resultMap 输出
+    @Test
+    public void testFindUserByIdResultMap() throws Exception
+    {
+        SqlSession sqlSession = sqlSessionFactory.openSession();
+
+        //创建usermapper对象,mybatis自动生成代理对象
+        UserMapper userMapper = sqlSession.getMapper(UserMapper.class);
+
+        //调用UserMapper的方法
+        User user = userMapper.findUserByIdResultMap(1);
+
+
+        System.out.println(user);
+    }
 
 }
