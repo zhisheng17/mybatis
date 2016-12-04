@@ -1,5 +1,6 @@
 package cn.zhisheng.mybatis.mapper;
 
+import cn.zhisheng.mybatis.po.Orders;
 import cn.zhisheng.mybatis.po.OrdersCustom;
 
 import java.util.List;
@@ -9,5 +10,10 @@ import java.util.List;
  */
 public interface OrdersMapperCustom
 {
+
     public List<OrdersCustom> findOrdersUser() throws Exception;
+
+    public List<Orders> findOrdersUserResultMap() throws Exception;
+
+    public List<Orders> findOrdersAndOrderDetailResultMap() throws Exception;
 }

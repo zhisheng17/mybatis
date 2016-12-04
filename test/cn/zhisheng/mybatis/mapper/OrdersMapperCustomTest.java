@@ -1,5 +1,6 @@
 package cn.zhisheng.mybatis.mapper;
 
+import cn.zhisheng.mybatis.po.Orders;
 import cn.zhisheng.mybatis.po.OrdersCustom;
 import org.apache.ibatis.io.Resources;
 import org.apache.ibatis.session.SqlSession;
@@ -45,6 +46,42 @@ public class OrdersMapperCustomTest
 
         //调用OrdersMapperCustom的方法
          List<OrdersCustom> list = ordersMapperCustom.findOrdersUser();
+
+
+        System.out.println(list);
+
+        sqlSession.close();
+    }
+
+
+
+    @Test
+    public void testFindOrdersUserResultMap() throws Exception
+    {
+        SqlSession sqlSession = sqlSessionFactory.openSession();
+
+        //创建OrdersMapperCustom对象,mybatis自动生成代理对象
+        OrdersMapperCustom ordersMapperCustom = sqlSession.getMapper(OrdersMapperCustom.class);
+
+        //调用OrdersMapperCustom的方法
+        List<Orders> list = ordersMapperCustom.findOrdersUserResultMap();
+
+
+        System.out.println(list);
+
+        sqlSession.close();
+    }
+
+    @Test
+    public void testFindOrdersAndOrderDetailResultMap() throws Exception
+    {
+        SqlSession sqlSession = sqlSessionFactory.openSession();
+
+        //创建OrdersMapperCustom对象,mybatis自动生成代理对象
+        OrdersMapperCustom ordersMapperCustom = sqlSession.getMapper(OrdersMapperCustom.class);
+
+        //调用OrdersMapperCustom的方法
+        List<Orders> list = ordersMapperCustom.findOrdersAndOrderDetailResultMap();
 
 
         System.out.println(list);

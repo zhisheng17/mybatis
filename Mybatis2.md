@@ -182,11 +182,201 @@ orders 和 items 之间可以通过 orderdetail 表建立 关系。
 
 ### 使用 resultMap
 
++ sql 语句（和上面的一致）
 
++ 使用 resultMap 映射思路
 
+  使用 resultMap 将查询结果中的订单信息映射到 Orders 对象中，在 orders 类中添加 User 属性，将关联查询出来的用户信息映射到 orders 对象中的 user 属性中。 
 
+  ```java
+   //用户信息
+   private User user;
+  ```
+
++ 映射文件
+
+  `OrdersMapperCustom.xml`
+
+  先定义 resultMap
+
+  ```xml
+  <!--定义查询订单关联查询用户信息的resultMap
+          将整个查询结果映射到cn.zhisheng.mybatis.po.Orders
+      -->
+      <resultMap id="OrdersUserResultMap" type="cn.zhisheng.mybatis.po.Orders">
+          <!--配置映射的订单信息-->
+          <!--id表示查询结果中的唯一标识  在这里是订单的唯一标识  如果是由多列组成的唯一标识，那么就需要配置多个id
+          column：id 是订单信息中的唯一标识列
+          property：id 是订单信息唯一标识列所映射到orders中的id属性
+          最终resultMap对column和property做一个映射关系（对应关系）
+          -->
+          <id column="id" property="id"/>
+          <result column="user_id" property="userId"/>
+          <result column="number" property="number"/>
+          <result column="createtime" property="createtime"/>
+          <result column="note" property="note"/>
+
+          <!--配置映射的关联用户信息
+              association 用于映射关联查询单个对象的信息
+              property  将要关联查询的用户信息映射到 orders中的属性中去
+          -->
+          <association property="user" javaType="cn.zhisheng.mybatis.po.User">
+              <!--id 关联用户信息的唯一标识
+                  column: 指定唯一标识用户的信息
+                  property：映射到user的那个属性
+              -->
+              <id column="user_id" property="id"/>
+              <result column="username" property="username"/>
+              <result column="sex" property="sex"/>
+              <result column="address" property="address"/>
+              <result column="birthday" property="birthday"/>
+          </association>
+      </resultMap>
+  ```
+
+  ```xml
+  <!--查询订单关联查询用户信息, 使用 resultMap-->
+      <select id="findOrdersUserResultMap" resultMap="OrdersUserResultMap">
+          SELECT orders.*, USER.username, USER.sex, USER.address FROM orders, USER WHERE orders.user_id = user.id
+      </select>
+  ```
+
++ Mapper 文件
+
+  ```java
+   public List<Orders> findOrdersUserResultMap() throws Exception;
+  ```
+
++ 测试代码
+
+  ```java
+   @Test
+      public void testFindOrdersUserResultMap() throws Exception
+      {
+          SqlSession sqlSession = sqlSessionFactory.openSession();
+          //创建OrdersMapperCustom对象,mybatis自动生成代理对象
+          OrdersMapperCustom ordersMapperCustom = sqlSession.getMapper(OrdersMapperCustom.class);
+          //调用OrdersMapperCustom的方法
+          List<Orders> list = ordersMapperCustom.findOrdersUserResultMap();
+          System.out.println(list);
+          sqlSession.close();
+      }
+  ```
+
++ 测试结果
+
+  ![](pic/Test10.jpg)
 
 
 
 ### 使用 resultType 和 resultMap 一对一查询小结
+
++ resultType：使用resultType实现较为简单，如果pojo中没有包括查询出来的列名，需要增加列名对应的属性，即可完成映射。如果没有查询结果的特殊要求建议使用resultType。
++ resultMap：需要单独定义resultMap，实现有点麻烦，如果对查询结果有特殊的要求，使用resultMap可以完成将关联查询映射pojo的属性中。resultMap可以实现延迟加载，resultType无法实现延迟加载。
+
+
+
+## 一对多查询
+
+**需求**：查询订单及订单明细信息
+
+**SQL语句**：
+
+确定主查询表：订单表
+
+确定关联查询表：订单明细表
+
+在一对一查询基础上添加订单明细表关联即可。
+
+```sql
+SELECT orders.*, USER.username, USER.sex, USER.address, orderdetail.id orderdetail_id, orderdetail.items_id, orderdetail.items_num, orderdetail.orders_id FROM orders, USER,
+orderdetail WHERE orders.user_id = user.id AND orderdetail.orders_id=orders.id
+```
+
+分析：
+
+使用 resultType 将上边的查询结果映射到 pojo 中，订单信息的就是重复。
+
+要求：
+
+> 对 orders 映射不能出现重复记录。
+
+在 orders.java 类中添加 List<orderDetail> orderDetails 属性。
+
+最终会将订单信息映射到 orders 中，订单所对应的订单明细映射到 orders 中的 orderDetails 属性中。
+
+映射成的 orders 记录数为两条（orders信息不重复）
+
+每个 orders 中的 orderDetails 属性存储了该订单所对应的订单明细。
+
+**映射文件**：
+
+首先定义 resultMap
+
+```xml
+<!--定义查询订单及订单明细信息的resultMap使用extends继承，不用在中配置订单信息和用户信息的映射-->
+    <resultMap id="OrdersAndOrderDetailResultMap" type="cn.zhisheng.mybatis.po.Orders" extends="OrdersUserResultMap">
+        <!-- 订单信息 -->
+        <!-- 用户信息 -->
+        <!-- 使用extends继承，不用在中配置订单信息和用户信息的映射 -->
+        <!-- 订单明细信息
+        一个订单关联查询出了多条明细，要使用collection进行映射
+        collection：对关联查询到多条记录映射到集合对象中
+        property：将关联查询到多条记录映射到cn.zhisheng.mybatis.po.Orders哪个属性
+        ofType：指定映射到list集合属性中pojo的类型
+         -->
+        <collection property="orderdetails" ofType="cn.zhisheng.mybatis.po.Orderdetail">
+        <!-- id：订单明细唯 一标识
+   property:要将订单明细的唯 一标识 映射到cn.zhisheng.mybatis.po.Orderdetail的哪个属性-->
+            <id column="orderdetail_id" property="id"/>
+            <result column="items_id" property="itemsId"/>
+            <result column="items_num" property="itemsNum"/>
+            <result column="orders_id" property="ordersId"/>
+        </collection>
+    </resultMap>
+```
+
+```xml
+ <!--查询订单及订单明细信息, 使用 resultMap-->
+    <select id="findOrdersAndOrderDetailResultMap" resultMap="OrdersAndOrderDetailResultMap">
+        SELECT orders.*, USER.username, USER.sex, USER.address, orderdetail.id orderdetail_id, orderdetail.items_id, orderdetail.items_num, orderdetail.orders_id
+        FROM orders, USER,orderdetail WHERE orders.user_id = user.id AND orderdetail.orders_id=orders.id
+    </select>
+```
+
+**Mapper 文件**
+
+```java
+public List<Orders> findOrdersAndOrderDetailResultMap() throws Exception;
+```
+
+**测试文件**
+
+```java
+@Test
+    public void testFindOrdersAndOrderDetailResultMap() throws Exception
+    {
+        SqlSession sqlSession = sqlSessionFactory.openSession();
+        //创建OrdersMapperCustom对象,mybatis自动生成代理对象
+        OrdersMapperCustom ordersMapperCustom = sqlSession.getMapper(OrdersMapperCustom.class);
+        //调用OrdersMapperCustom的方法
+        List<Orders> list = ordersMapperCustom.findOrdersAndOrderDetailResultMap();
+        System.out.println(list);
+        sqlSession.close();
+    }
+```
+
+**测试结果**
+
+![](pic/Test11.jpg)
+
+### 总结：
+
+mybatis使用resultMap的collection对关联查询的多条记录映射到一个list集合属性中。 
+
+使用resultType实现：将订单明细映射到orders中的orderdetails中，需要自己处理，使用双重循环遍历，去掉重复记录，将订单明细放在orderdetails中。
+
+
+
+
 
