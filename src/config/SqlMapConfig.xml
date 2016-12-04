@@ -37,5 +37,6 @@
     <mappers>
         <mapper resource="sqlmap/User.xml"/>
         <mapper resource="mapper/UserMapper.xml"/>
+        <mapper resource="mapper/OrdersMapperCustom.xml"/>
     </mappers>
 </configuration>
