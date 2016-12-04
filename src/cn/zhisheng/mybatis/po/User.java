@@ -1,6 +1,7 @@
 package cn.zhisheng.mybatis.po;
 
 import java.util.Date;
+import java.util.List;
 
 /**
  * Created by 10412 on 2016/11/28.
@@ -13,7 +14,19 @@ public class User
     private Date birthday;              // 生日
     private String address;             // 地址
 
+    //用户创建的订单列表
+    private List<Orders> ordersList;
+
     //getter and setter
+
+    public List<Orders> getOrdersList() {
+        return ordersList;
+    }
+
+    public void setOrdersList(List<Orders> ordersList) {
+        this.ordersList = ordersList;
+    }
+
 
     public int getId() {
         return id;
