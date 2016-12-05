@@ -106,4 +106,25 @@ public class OrdersMapperCustomTest
 
         sqlSession.close();
     }
+
+    @Test
+    public void testFindOrdersUserLazyLoading() throws Exception
+    {
+        SqlSession sqlSession = sqlSessionFactory.openSession();
+
+        //创建OrdersMapperCustom对象,mybatis自动生成代理对象
+        OrdersMapperCustom ordersMapperCustom = sqlSession.getMapper(OrdersMapperCustom.class);
+
+        //查询订单信息
+        List<Orders> list = ordersMapperCustom.findOrdersUserLazyLoading();
+
+        //遍历所查询的的订单信息
+        for (Orders orders : list)
+        {
+            //查询用户信息
+            User user = orders.getUser();
+            System.out.println(user);
+        }
+        sqlSession.close();
+    }
 }

@@ -112,6 +112,30 @@
             </collection>
         </collection>
     </resultMap>
+    
+    <!--定义 关联用户信息（通过 association 延迟加载）的resultMap-->
+    <resultMap id="OrdersUserLazyLoadingResultMap" type="cn.zhisheng.mybatis.po.Orders">
+        <!--对订单信息映射-->
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="number" property="number"/>
+        <result column="createtime" property="createtime"/>
+        <result column="note" property="note"/>
+
+        <!-- 实现对用户信息进行延迟加载
+			select：指定延迟加载需要执行的statement的id（是根据user_id查询用户信息的statement）
+			要使用userMapper.xml中findUserById完成根据用户id(user_id)用户信息的查询，如果findUserById不在本mapper中需要前边加namespace
+			column：订单信息中关联用户信息查询的列，是user_id
+			关联查询的sql理解为：
+			SELECT orders.*,
+	        (SELECT username FROM USER WHERE orders.user_id = user.id)username,
+	        (SELECT sex FROM USER WHERE orders.user_id = user.id)sex
+	        FROM orders
+		-->
+        <association property="user" javaType="cn.zhisheng.mybatis.po.User" select="cn.zhisheng.mybatis.mapper.UserMapper.findUserById" column="user_id">
+
+        </association>
+    </resultMap>
 
     <!--查询订单关联查询用户信息-->
     <select id="findOrdersUser" resultType="cn.zhisheng.mybatis.po.OrdersCustom">
@@ -135,4 +159,11 @@
         SELECT orders.*, USER.username, USER.sex, USER.address, orderdetail.id orderdetail_id, orderdetail.items_id, orderdetail.items_num, orderdetail.orders_id
         FROM orders, USER,orderdetail WHERE orders.user_id = user.id AND orderdetail.orders_id=orders.id
     </select>
+
+    <!--查询订单并且关联查询用户信息，关联用户信息需要通过 association 延迟加载-->
+    <select id="findOrdersUserLazyLoading" resultMap="OrdersUserLazyLoadingResultMap">
+        select * from orders
+    </select>
+
+
 </mapper>

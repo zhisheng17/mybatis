@@ -568,3 +568,177 @@ public List<User> findUserAndItemsResultMap() throws  Exception;
 场合：
 > 为了方便查询遍历关联信息可以使用collection将关联信息映射到list集合中，比如：查询用户权限范围模块及模块下的菜单，可使用collection将模块映射到模块list中，将菜单列表映射到模块对象的菜单list属性中，这样的作的目的也是方便对查询结果集进行遍历查询。如果使用resultType无法将查询结果映射到list集合中。
 
+
+
+## 延迟加载
+
+### 什么是延迟加载？
+
+resultMap可以实现高级映射（使用association、collection实现一对一及一对多映射），association、collection具备延迟加载功能。
+需求：
+如果查询订单并且关联查询用户信息。如果先查询订单信息即可满足要求，当我们需要查询用户信息时再查询用户信息。把对用户信息的按需去查询就是延迟加载。
+
+延迟加载：先从单表查询、需要时再从关联表去关联查询，大大提高 数据库性能，因为查询单表要比关联查询多张表速度要快。
+
+### 打开延迟加载开关
+
+在mybatis核心配置文件中配置：
+
+lazyLoadingEnabled、aggressiveLazyLoading
+
+|          设置项          |                    描述                    |      允许值      |  默认值  |
+| :-------------------: | :--------------------------------------: | :-----------: | :---: |
+|  lazyLoadingEnabled   |  全局性设置懒加载。如果设为‘false’，则所有相关联的都会被初始化加载。   | true \| false | false |
+| aggressiveLazyLoading | 当设置为‘true’的时候，懒加载的对象可能被任何懒属性全部加载。否则，每个属性都按需加载。 | true \| false | true  |
+
+```xml
+<settings>
+		<setting name="lazyLoadingEnabled" value="true"/>
+		<setting name="aggressiveLazyLoading" value="false"/>
+</settings>
+```
+
+
+
+### 使用 association 实现延迟加载
+
+需求：查询订单并且关联查询用户信息
+
+### Mapper.xml
+
+需要定义两个 mapper 的方法对应的 statement。
+
+1、只查询订单信息
+
+SQL 语句： `select * from orders`
+
+在查询订单的 statement 中使用 association 去延迟加载（执行）下边的 statement (关联查询用户信息)
+
+```xml
+<!--查询订单并且关联查询用户信息，关联用户信息需要通过 association 延迟加载-->
+    <select id="findOrdersUserLazyLoading" resultMap="OrdersUserLazyLoadingResultMap">
+        select * from orders
+    </select>
+```
+
+2、关联查询用户信息
+
+通过上面查询订单信息中的 user_id 来关联查询用户信息。使用 UserMapper.xml 中的 findUserById
+
+SQL语句：`select * from user where id = user_id`
+
+```xml
+<select id="findUserById" parameterType="int" resultType="user">
+        select * from user where id = #{value}
+    </select>
+```
+
+上边先去执行 findOrdersUserLazyLoading，当需要去查询用户的时候再去执行 findUserById ，通过 resultMap的定义将延迟加载执行配置起来。也就是通过 resultMap 去加载 UserMapper.xml 文件中的 select = findUserById
+
+### 延迟加载的 resultMap
+
+```xml
+<!--定义 关联用户信息（通过 association 延迟加载）的resultMap-->
+    <resultMap id="OrdersUserLazyLoadingResultMap" type="cn.zhisheng.mybatis.po.Orders">
+        <!--对订单信息映射-->
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="number" property="number"/>
+        <result column="createtime" property="createtime"/>
+        <result column="note" property="note"/>
+        <!-- 实现对用户信息进行延迟加载
+		select：指定延迟加载需要执行的statement的id（是根据user_id查询用户信息的statement）
+		要使用userMapper.xml中findUserById完成根据用户id(user_id)用户信息的查询，如果findUserById不在本mapper中需要前边加namespace
+		column：订单信息中关联用户信息查询的列，是user_id
+		关联查询的sql理解为：
+			SELECT orders.*,
+	        (SELECT username FROM USER WHERE orders.user_id = user.id)username,
+	        (SELECT sex FROM USER WHERE orders.user_id = user.id)sex
+	        FROM orders-->
+        <association property="user" javaType="cn.zhisheng.mybatis.po.User" select="cn.zhisheng.mybatis.mapper.UserMapper.findUserById" column="user_id">
+        </association>
+    </resultMap>
+```
+
+### OrderMapperCustom.java
+
+```java
+public List<Orders> findOrdersUserLazyLoading() throws Exception;
+```
+
+### 测试代码：
+
+```java
+@Test
+    public void testFindOrdersUserLazyLoading() throws Exception
+    {
+        SqlSession sqlSession = sqlSessionFactory.openSession();
+        //创建OrdersMapperCustom对象,mybatis自动生成代理对象
+        OrdersMapperCustom ordersMapperCustom = sqlSession.getMapper(OrdersMapperCustom.class);
+        //查询订单信息
+        List<Orders> list = ordersMapperCustom.findOrdersUserLazyLoading();
+        //遍历所查询的的订单信息
+        for (Orders orders : list)
+        {
+            //查询用户信息
+            User user = orders.getUser();
+            System.out.println(user);
+        }
+        sqlSession.close();
+    }
+```
+
+### 测试结果：
+
+![](pic/Test14.jpg)
+
+整个延迟加载的思路：    
+
+1、执行上边mapper方法（findOrdersUserLazyLoading），内部去调用cn.zhisheng.mybatis.mapper.OrdersMapperCustom 中的 findOrdersUserLazyLoading 只查询 orders 信息（单表）。
+
+2、在程序中去遍历上一步骤查询出的 List<Orders>，当我们调用 Orders 中的 getUser 方法时，开始进行延迟加载。
+
+3、延迟加载，去调用 UserMapper.xml 中 findUserbyId 这个方法获取用户信息。
+
+### 思考：
+
+不使用 mybatis 提供的 association 及 collection 中的延迟加载功能，如何实现延迟加载？？
+
+实现方法如下：
+
+定义两个mapper方法：
+
+1、查询订单列表
+
+2、根据用户id查询用户信息
+
+实现思路：
+
+先去查询第一个mapper方法，获取订单信息列表
+
+在程序中（service），按需去调用第二个mapper方法去查询用户信息。
+
+总之：
+
+使用延迟加载方法，先去查询 简单的 sql（最好单表，也可以关联查询），再去按需要加载关联查询的其它信息。
+
+### 一对多延迟加载
+
+上面的那个案例是一对一延迟加载，那么如果我们想一对多进行延迟加载呢，其实也是很简单的。
+
+一对多延迟加载的方法同一对一延迟加载，在collection标签中配置select内容。
+
+### 延迟加载总结：
+
+作用：
+> 当需要查询关联信息时再去数据库查询，默认不去关联查询，提高数据库性能。
+> 只有使用resultMap支持延迟加载设置。
+
+场合：
+
+> 当只有部分记录需要关联查询其它信息时，此时可按需延迟加载，需要关联查询时再向数据库发出sql，以提高数据库性能。
+>
+> 当全部需要关联查询信息时，此时不用延迟加载，直接将关联查询信息全部返回即可，可使用resultType或resultMap完成映射。
+
+
+
