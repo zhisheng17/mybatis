@@ -880,7 +880,7 @@ mybaits的二级缓存是mapper范围级别，除了在SqlMapConfig.xml设置二
 
 **调用 pojo 类实现序列化接口**：
 
-二级缓存需要查询结果映射的pojo对象实现java.io.Serializable接口实现序列化和反序列化操作，注意如果存在父类、成员pojo都需要实现序列化接口。
+二级缓存需要查询结果映射的pojo对象实现java.io.Serializable接口实现序列化和反序列化操作（因为二级缓存数据存储介质多种多样，在内存不一样），注意如果存在父类、成员pojo都需要实现序列化接口。
 
 ```java
 public class Orders implements Serializable
@@ -981,6 +981,181 @@ readOnly（只读）属性可以被设置为true或false。只读的缓存会给
 4.     WEAK – 弱引用:更积极地移除基于垃圾收集器状态和弱引用规则的对象。
 
 
+
+
+### Mybatis 整合 ehcache
+
+ehcache 是一个分布式缓存框架。
+
+**分布缓存**
+
+我们系统为了提高系统并发，性能、一般对系统进行分布式部署（集群部署方式）
+
+![](pic/eheache.jpg)
+
+不使用分布缓存，缓存的数据在各各服务单独存储，不方便系统 开发。所以要使用分布式缓存对缓存数据进行集中管理。
+
+
+mybatis无法实现分布式缓存，需要和其它分布式缓存框架进行整合。
+
+**整合方法**
+
+mybatis 提供了一个二级缓存 cache 接口（`org.apache.ibatis.cache` 下的 `Cache`），如果要实现自己的缓存逻辑，实现cache接口开发即可。
+
+```java
+import java.util.concurrent.locks.ReadWriteLock;
+public interface Cache {
+    String getId();
+    void putObject(Object var1, Object var2);
+    Object getObject(Object var1);
+    Object removeObject(Object var1);
+    void clear();
+    int getSize();
+    ReadWriteLock getReadWriteLock();
+}
+```
+
+mybatis和ehcache整合，mybatis 和 ehcache 整合包中提供了一个 cache 接口的实现类(`org.apache.ibatis.cache.impl` 下的 `PerpetualCache`)。
+
+```java
+package org.apache.ibatis.cache.impl;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.locks.ReadWriteLock;
+import org.apache.ibatis.cache.Cache;
+import org.apache.ibatis.cache.CacheException;
+public class PerpetualCache implements Cache {
+    private String id;
+    private Map<Object, Object> cache = new HashMap();
+    public PerpetualCache(String id) {
+        this.id = id;
+    }
+    public String getId() {
+        return this.id;
+    }
+    public int getSize() {
+        return this.cache.size();
+    }
+    public void putObject(Object key, Object value) {
+        this.cache.put(key, value);
+    }
+    public Object getObject(Object key) {
+        return this.cache.get(key);
+    }
+    public Object removeObject(Object key) {
+        return this.cache.remove(key);
+    }
+    public void clear() {
+        this.cache.clear();
+    }
+    public ReadWriteLock getReadWriteLock() {
+        return null;
+    }
+    public boolean equals(Object o) {
+        if(this.getId() == null) {
+            throw new CacheException("Cache instances require an ID.");
+        } else if(this == o) {
+            return true;
+        } else if(!(o instanceof Cache)) {
+            return false;
+        } else {
+            Cache otherCache = (Cache)o;
+            return this.getId().equals(otherCache.getId());
+        }
+    }
+    public int hashCode() {
+        if(this.getId() == null) {
+            throw new CacheException("Cache instances require an ID.");
+        } else {
+            return this.getId().hashCode();
+        }
+    }
+}
+```
+
+通过实现 Cache 接口可以实现 mybatis 缓存数据通过其它缓存数据库整合，mybatis 的特长是sql操作，缓存数据的管理不是 mybatis 的特长，为了提高缓存的性能将 mybatis 和第三方的缓存数据库整合，比如 ehcache、memcache、redis等。
+
++ 引入依赖包
+
+  `ehcache-core-2.6.5.jar` 和 `mybatis-ehcache-1.0.2.jar`
+
++ 引入缓存配置文件
+
+  classpath下添加：ehcache.xml
+
+  内容如下：
+
+  ```xml
+  <ehcache xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  	xsi:noNamespaceSchemaLocation="http://ehcache.org/ehcache.xsd">
+  	<diskStore path="C:\JetBrains\IDEAProject\ehcache" />
+  	<defaultCache 
+  		maxElementsInMemory="1000" 
+  		maxElementsOnDisk="10000000"
+  		eternal="false" 
+  		overflowToDisk="false" 
+  		timeToIdleSeconds="120"
+  		timeToLiveSeconds="120" 
+  		diskExpiryThreadIntervalSeconds="120"
+  		memoryStoreEvictionPolicy="LRU">
+  	</defaultCache>
+  </ehcache>
+  ```
+
+  属性说明：
+
+  + diskStore：指定数据在磁盘中的存储位置。
+  + defaultCache：当借助 CacheManager.add("demoCache") 创建Cache时，EhCache 便会采用<defalutCache/>指定的的管理策略
+
+  以下属性是必须的：
+
+  + maxElementsInMemory - 在内存中缓存的element的最大数目 
+  + maxElementsOnDisk - 在磁盘上缓存的element的最大数目，若是0表示无穷大
+  + eternal - 设定缓存的elements是否永远不过期。如果为true，则缓存的数据始终有效，如果为false那么还要根据timeToIdleSeconds，timeToLiveSeconds判断
+  + overflowToDisk- 设定当内存缓存溢出的时候是否将过期的element缓存到磁盘上
+
+  以下属性是可选的：
+
+  + timeToIdleSeconds - 当缓存在EhCache中的数据前后两次访问的时间超过timeToIdleSeconds的属性取值时，这些数据便会删除，默认值是0,也就是可闲置时间无穷大
+  + timeToLiveSeconds - 缓存element的有效生命期，默认是0.,也就是element存活时间无穷大
+
+         diskSpoolBufferSizeMB 这个参数设置DiskStore(磁盘缓存)的缓存区大小.默认是30MB.每个Cache都应该有自己的一个缓冲区.
+
+  + diskPersistent- 在VM重启的时候是否启用磁盘保存EhCache中的数据，默认是false。
+  + diskExpiryThreadIntervalSeconds - 磁盘缓存的清理线程运行间隔，默认是120秒。每个120s，相应的线程会进行一次EhCache中数据的清理工作
+  + memoryStoreEvictionPolicy - 当内存缓存达到最大，有新的element加入的时候， 移除缓存中element的策略。默认是LRU（最近最少使用），可选的有LFU（最不常使用）和FIFO（先进先出）
+
++ 开启ehcache缓存
+
+  EhcacheCache 是ehcache对Cache接口的实现；修改mapper.xml文件，在cache中指定EhcacheCache。
+
+  根据需求调整缓存参数：
+
+  ```xml
+  <cache type="org.mybatis.caches.ehcache.EhcacheCache" > 
+          <property name="timeToIdleSeconds" value="3600"/>
+          <property name="timeToLiveSeconds" value="3600"/>
+          <!-- 同ehcache参数maxElementsInMemory -->
+  		<property name="maxEntriesLocalHeap" value="1000"/>
+  		<!-- 同ehcache参数maxElementsOnDisk -->
+          <property name="maxEntriesLocalDisk" value="10000000"/>
+          <property name="memoryStoreEvictionPolicy" value="LRU"/>
+      </cache>
+  ```
+
+**测试** ：(这命中率就代表成功将ehcache 与 mybatis 整合了)
+
+![](pic/Test18.jpg)
+
+### 应用场景
+
+对于访问多的查询请求且用户对查询结果实时性要求不高，此时可采用 mybatis 二级缓存技术降低数据库访问量，提高访问速度，业务场景比如：耗时较高的统计分析sql、电话账单查询sql等。
+
+实现方法如下：通过设置刷新间隔时间，由 mybatis 每隔一段时间自动清空缓存，根据数据变化频率设置缓存刷新间隔 flushInterval，比如设置为30分钟、60分钟、24小时等，根据需求而定。
+
+### 局限性
+
+mybatis 二级缓存对细粒度的数据级别的缓存实现不好，比如如下需求：对商品信息进行缓存，由于商品信息查询访问量大，但是要求用户每次都能查询最新的商品信息，此时如果使用 mybatis 的二级缓存就无法实现当一个商品变化时只刷新该商品的缓存信息而不刷新其它商品的信息，因为 mybaits 的二级缓存区域以 mapper 为单位划分，当一个商品信息变化会将所有商品信息的缓存数据全部清空。解决此类问题需要在业务层根据需求对数据有针对性缓存。
 
 
 

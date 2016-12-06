@@ -172,26 +172,23 @@ public class OrdersMapperCustomTest
 
         //创建UserMapper对象,mybatis自动生成代理对象
         UserMapper userMapper1 = sqlSession1.getMapper(UserMapper.class);
-
         //sqlSession1 执行查询 写入缓存(第一次查询请求)
         User user1 = userMapper1.findUserById(1);
         System.out.println(user1);
+        //这里执行关闭操作，将sqlsession中的数据写入到二级缓存区域
         sqlSession1.close();
 
 
         //sqlSession3  执行提交  清空缓存
-        UserMapper userMapper3 = sqlSession3.getMapper(UserMapper.class);
+        /*UserMapper userMapper3 = sqlSession3.getMapper(UserMapper.class);
         User user3 = userMapper3.findUserById(1);
         user3.setSex("女");
         user3.setAddress("山东济南");
         user3.setUsername("崔建");
         userMapper3.updateUserById(user3);
-
         //提交事务，清空缓存
         sqlSession3.commit();
-        sqlSession3.close();
-
-
+        sqlSession3.close();*/
 
         //sqlSession2 执行查询(第二次查询请求)
         UserMapper userMapper2 = sqlSession2.getMapper(UserMapper.class);

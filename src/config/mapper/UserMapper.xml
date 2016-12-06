@@ -10,8 +10,11 @@
 
     <!--在映射文件中配置很多sql语句-->
 
-    <!--表示此mapper映射文件开启二级缓存-->
-    <cache/>
+    <!-- 开启本mapper的namespace下的二缓存
+	type：指定cache接口的实现类的类型，mybatis默认使用PerpetualCache
+	要和ehcache整合，需要配置type为ehcache实现cache接口的类型
+	 -->
+    <cache type="org.mybatis.caches.ehcache.EhcacheCache"/>
 
     <!--sql片段
     id:唯一标识
@@ -130,7 +133,7 @@
         resultType：表示指定sql输出结果的所映射的java对象类型
     -->
     <!-- 根据id获取用户信息 -->
-    <select id="findUserById" parameterType="int" resultType="user" useCache="false">
+    <select id="findUserById" parameterType="int" resultType="user" useCache="true">
         select * from user where id = #{id}
     </select>
     <!-- 自定义条件查询用户列表,可能返回多条
