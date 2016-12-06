@@ -127,4 +127,36 @@ public class OrdersMapperCustomTest
         }
         sqlSession.close();
     }
+
+    //一级缓存测试
+    @Test
+    public void  testCache1() throws Exception {
+        SqlSession sqlSession = sqlSessionFactory.openSession();
+
+        //创建UserMapper对象,mybatis自动生成代理对象
+        UserMapper userMapper = sqlSession.getMapper(UserMapper.class);
+
+        //查询使用的是同一个session
+        //第一次发起请求，查询Id 为1的用户信息
+        User user1 = userMapper.findUserById(1);
+        System.out.println(user1);
+
+        //如果sqlSession去执行commit操作（执行插入、更新、删除），
+        // 清空SqlSession中的一级缓存，这样做的目的为了让缓存中存储的是最新的信息，避免脏读。
+
+        //更新user1的信息，
+        user1.setUsername("李飞");
+//        user1.setSex("男");
+//        user1.setAddress("北京");
+        userMapper.updateUserById(user1);
+        //提交事务,才会去清空缓存
+        sqlSession.commit();
+
+        //第二次发起请求，查询Id 为1的用户信息
+        User user2 = userMapper.findUserById(1);
+
+        System.out.println(user2);
+
+        sqlSession.close();
+    }
 }

@@ -742,3 +742,112 @@ public List<Orders> findOrdersUserLazyLoading() throws Exception;
 
 
 
+## 查询缓存
+
+### 什么是查询缓存？
+
+mybatis提供查询缓存，用于减轻数据压力，提高数据库性能。
+
+mybaits提供一级缓存，和二级缓存。
+
+![](pic/cache.jpg)
+
+ 
+
++ 一级缓存是SqlSession级别的缓存。在操作数据库时需要构造 sqlSession对象，在对象中有一个数据结构（HashMap）用于存储缓存数据。不同的sqlSession之间的缓存数据区域（HashMap）是互相不影响的。
++ 二级缓存是mapper级别的缓存，多个SqlSession去操作同一个Mapper的sql语句，多个SqlSession可以共用二级缓存，二级缓存是跨SqlSession的。
+
+ 为什么要用缓存？
+
+如果缓存中有数据就不用从数据库中获取，大大提高系统性能。
+
+### 一级缓存
+
+**工作原理**：
+
+![](pic/cache1.jpg)
+
+ 
+
+第一次发起查询用户id为1的用户信息，先去找缓存中是否有id为1的用户信息，如果没有，从数据库查询用户信息。
+
+得到用户信息，将用户信息存储到一级缓存中。
+
+如果sqlSession去执行commit操作（执行插入、更新、删除），清空SqlSession中的一级缓存，这样做的目的为了让缓存中存储的是最新的信息，避免脏读。
+
+第二次发起查询用户id为1的用户信息，先去找缓存中是否有id为1的用户信息，缓存中有，直接从缓存中获取用户信息。
+
+**一级缓存测试**
+
+Mybatis 默认支持一级缓存，不需要在配置文件中配置。
+
+所以我们直接按照上面的步骤进行测试：
+
+```java
+//一级缓存测试
+    @Test
+    public void  testCache1() throws Exception {
+        SqlSession sqlSession = sqlSessionFactory.openSession();
+        //创建UserMapper对象,mybatis自动生成代理对象
+        UserMapper userMapper = sqlSession.getMapper(UserMapper.class);
+        //查询使用的是同一个session
+        //第一次发起请求，查询Id 为1的用户信息
+        User user1 = userMapper.findUserById(1);
+        System.out.println(user1);
+        //第二次发起请求，查询Id 为1的用户信息
+        User user2 = userMapper.findUserById(1);
+        System.out.println(user2);
+        sqlSession.close();
+    }
+```
+
+![](pic/Test15.jpg)
+
+通过结果可以看出第二次没有发出sql查询请求，
+
+所以我们需要在中间执行 commit 操作
+
+```java
+//如果sqlSession去执行commit操作（执行插入、更新、删除），
+// 清空SqlSession中的一级缓存，这样做的目的为了让缓存中存储的是最新的信息，避免脏读。
+//更新user1的信息，
+user1.setUsername("李飞");
+//user1.setSex("男");
+//user1.setAddress("北京");
+userMapper.updateUserById(user1);
+//提交事务,才会去清空缓存
+sqlSession.commit();
+```
+
+测试
+
+![](pic/Test16.jpg)
+
+**一级缓存应用**
+
+正式开发，是将 mybatis 和 spring 进行整合开发，事务控制在 service 中。
+
+一个 service 方法中包括很多 mapper 方法调用。
+
+service{
+
+         //开始执行时，开启事务，创建SqlSession对象
+
+         //第一次调用mapper的方法findUserById(1)
+
+         //第二次调用mapper的方法findUserById(1)，从一级缓存中取数据
+
+         //方法结束，sqlSession关闭
+
+}
+
+如果是执行两次service调用查询相同的用户信息，不走一级缓存，因为session方法结束，sqlSession就关闭，一级缓存就清空。
+
+
+
+
+
+
+
+
+
