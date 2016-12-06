@@ -1,12 +1,13 @@
 package cn.zhisheng.mybatis.po;
 
+import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
 
 /**
  * Created by 10412 on 2016/11/28.
  */
-public class User
+public class User implements Serializable
 {
     private int id;
     private String username;            // 用户姓名

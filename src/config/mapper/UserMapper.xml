@@ -10,6 +10,8 @@
 
     <!--在映射文件中配置很多sql语句-->
 
+    <!--表示此mapper映射文件开启二级缓存-->
+    <cache/>
 
     <!--sql片段
     id:唯一标识
@@ -128,7 +130,7 @@
         resultType：表示指定sql输出结果的所映射的java对象类型
     -->
     <!-- 根据id获取用户信息 -->
-    <select id="findUserById" parameterType="int" resultType="user">
+    <select id="findUserById" parameterType="int" resultType="user" useCache="false">
         select * from user where id = #{id}
     </select>
     <!-- 自定义条件查询用户列表,可能返回多条
@@ -142,7 +144,7 @@
     </select>
 
     <!-- 添加用户 -->
-    <insert id="insetrUser" parameterType="cn.zhisheng.mybatis.po.User" >
+    <insert id="insetrUser" parameterType="cn.zhisheng.mybatis.po.User" flushCache="true">
         <!-- selectKey将主键返回，需要再返回
              parameterType：指定输入参数类型是 POJO （包括用户信息）
              添加selectKey实现将主键返回

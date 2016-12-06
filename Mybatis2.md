@@ -845,7 +845,140 @@ service{
 
 
 
+### 二级缓存
 
+原理
+
+![](pic/cache2.jpg)
+
+首先开启mybatis的二级缓存。
+
+ sqlSession1去查询用户id为1的用户信息，查询到用户信息会将查询数据存储到二级缓存中。 
+
+如果SqlSession3去执行相同 mapper下sql，执行commit提交，清空该 mapper下的二级缓存区域的数据。 
+
+sqlSession2去查询用户id为1的用户信息，去缓存中找是否存在数据，如果存在直接从缓存中取出数据。 
+
+二级缓存与一级缓存区别，二级缓存的范围更大，多个sqlSession可以共享一个UserMapper的二级缓存区域。
+
+UserMapper有一个二级缓存区域（按namespace分） ，其它mapper也有自己的二级缓存区域（按namespace分）。
+
+每一个namespace的mapper都有一个二缓存区域，两个mapper的namespace如果相同，这两个mapper执行sql查询到数据将存在相同的二级缓存区域中。
+
+**开启二级缓存**：
+
+mybaits的二级缓存是mapper范围级别，除了在SqlMapConfig.xml设置二级缓存的总开关，还要在具体的mapper.xml中开启二级缓存
+
+在 SqlMapConfig.xml 开启二级开关
+
+```java
+<!-- 开启二级缓存 -->
+<setting name="cacheEnabled" value="true"/>
+```
+
+然后在你的 Mapper 映射文件中添加一行：  <cache/> ，表示此 mapper 开启二级缓存。
+
+**调用 pojo 类实现序列化接口**：
+
+二级缓存需要查询结果映射的pojo对象实现java.io.Serializable接口实现序列化和反序列化操作，注意如果存在父类、成员pojo都需要实现序列化接口。
+
+```java
+public class Orders implements Serializable
+public class User implements Serializable
+```
+
+**测试**
+
+```java
+//二级缓存测试
+    @Test
+    public void testCache2() throws Exception
+    {
+        SqlSession sqlSession1 = sqlSessionFactory.openSession();
+        SqlSession sqlSession2 = sqlSessionFactory.openSession();
+        SqlSession sqlSession3 = sqlSessionFactory.openSession();
+
+
+        //创建UserMapper对象,mybatis自动生成代理对象
+        UserMapper userMapper1 = sqlSession1.getMapper(UserMapper.class);
+        //sqlSession1 执行查询 写入缓存(第一次查询请求)
+        User user1 = userMapper1.findUserById(1);
+        System.out.println(user1);
+        sqlSession1.close();
+
+
+        //sqlSession3  执行提交  清空缓存
+        UserMapper userMapper3 = sqlSession3.getMapper(UserMapper.class);
+        User user3 = userMapper3.findUserById(1);
+        user3.setSex("女");
+        user3.setAddress("山东济南");
+        user3.setUsername("崔建");
+        userMapper3.updateUserById(user3);
+        //提交事务，清空缓存
+        sqlSession3.commit();
+        sqlSession3.close();
+        
+        //sqlSession2 执行查询(第二次查询请求)
+        UserMapper userMapper2 = sqlSession2.getMapper(UserMapper.class);
+        User user2 = userMapper2.findUserById(1);
+        System.out.println(user2);
+        sqlSession2.close();
+   }
+```
+
+**结果**：
+
+![](pic/Test17.jpg)
+
+**useCache 配置**
+
+ 在 statement 中设置 useCache=false 可以禁用当前 select 语句的二级缓存，即每次查询都会发出sql去查询，默认情况是true，即该sql使用二级缓存。
+
+```xml
+<select id="findUserById" parameterType="int" resultType="user" useCache="false">
+```
+
+总结：针对每次查询都需要最新的数据sql，要设置成useCache=false，禁用二级缓存。 
+
+**刷新缓存（清空缓存）**
+
+在mapper的同一个namespace中，如果有其它insert、update、delete操作数据后需要刷新缓存，如果不执行刷新缓存会出现脏读。
+
+ 设置statement配置中的flushCache="true" 属性，默认情况下为true即刷新缓存，如果改成false则不会刷新。使用缓存时如果手动修改数据库表中的查询数据会出现脏读。
+
+如下：
+
+```xml
+<insert id="insetrUser" parameterType="cn.zhisheng.mybatis.po.User" flushCache="true">
+```
+
+一般下执行完commit操作都需要刷新缓存，flushCache=true表示刷新缓存，这样可以避免数据库脏读。
+
+
+
+### Mybatis Cache参数
+
+flushInterval（刷新间隔）可以被设置为任意的正整数，而且它们代表一个合理的毫秒形式的时间段。默认情况是不设置，也就是没有刷新间隔，缓存仅仅调用语句时刷新。
+
+size（引用数目）可以被设置为任意正整数，要记住你缓存的对象数目和你运行环境的可用内存资源数目。默认值是1024。
+
+readOnly（只读）属性可以被设置为true或false。只读的缓存会给所有调用者返回缓存对象的相同实例。因此这些对象不能被修改。这提供了很重要的性能优势。可读写的缓存会返回缓存对象的拷贝（通过序列化）。这会慢一些，但是安全，因此默认是false。
+
+如下例子：
+
+```xml
+<cache  eviction="FIFO" flushInterval="60000"  size="512" readOnly="true"/>
+```
+
+这个更高级的配置创建了一个 FIFO 缓存,并每隔 60 秒刷新,存数结果对象或列表的 512 个引用,而且返回的对象被认为是只读的,因此在不同线程中的调用者之间修改它们会导致冲突。可用的收回策略有, 默认的是 LRU:
+
+1.     LRU – 最近最少使用的:移除最长时间不被使用的对象。
+
+2.     FIFO – 先进先出:按对象进入缓存的顺序来移除它们。
+
+3.     SOFT – 软引用:移除基于垃圾回收器状态和软引用规则的对象。
+
+4.     WEAK – 弱引用:更积极地移除基于垃圾收集器状态和弱引用规则的对象。
 
 
 

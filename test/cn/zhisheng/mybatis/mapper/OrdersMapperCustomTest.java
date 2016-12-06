@@ -146,8 +146,8 @@ public class OrdersMapperCustomTest
 
         //更新user1的信息，
         user1.setUsername("李飞");
-//        user1.setSex("男");
-//        user1.setAddress("北京");
+        user1.setSex("男");
+        user1.setAddress("北京");
         userMapper.updateUserById(user1);
         //提交事务,才会去清空缓存
         sqlSession.commit();
@@ -159,4 +159,47 @@ public class OrdersMapperCustomTest
 
         sqlSession.close();
     }
+
+
+    //二级缓存测试
+    @Test
+    public void testCache2() throws Exception
+    {
+        SqlSession sqlSession1 = sqlSessionFactory.openSession();
+        SqlSession sqlSession2 = sqlSessionFactory.openSession();
+        SqlSession sqlSession3 = sqlSessionFactory.openSession();
+
+
+        //创建UserMapper对象,mybatis自动生成代理对象
+        UserMapper userMapper1 = sqlSession1.getMapper(UserMapper.class);
+
+        //sqlSession1 执行查询 写入缓存(第一次查询请求)
+        User user1 = userMapper1.findUserById(1);
+        System.out.println(user1);
+        sqlSession1.close();
+
+
+        //sqlSession3  执行提交  清空缓存
+        UserMapper userMapper3 = sqlSession3.getMapper(UserMapper.class);
+        User user3 = userMapper3.findUserById(1);
+        user3.setSex("女");
+        user3.setAddress("山东济南");
+        user3.setUsername("崔建");
+        userMapper3.updateUserById(user3);
+
+        //提交事务，清空缓存
+        sqlSession3.commit();
+        sqlSession3.close();
+
+
+
+        //sqlSession2 执行查询(第二次查询请求)
+        UserMapper userMapper2 = sqlSession2.getMapper(UserMapper.class);
+        User user2 = userMapper2.findUserById(1);
+        System.out.println(user2);
+        sqlSession2.close();
+
+
+
+   }
 }
