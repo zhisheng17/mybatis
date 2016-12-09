@@ -10,6 +10,7 @@
       <sourceFolder url="file://$MODULE_DIR$/test" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/src/config/mapper" type="java-resource" />
       <sourceFolder url="file://$MODULE_DIR$/src/config/sqlmap" type="java-resource" />
+      <sourceFolder url="file://$MODULE_DIR$/Spring-Mybatis/src/cn" isTestSource="false" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
