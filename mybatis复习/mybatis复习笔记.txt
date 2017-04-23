@@ -1,0 +1,2280 @@
+一 mybatis入门
+	1.1 mybatis是什么
+		MyBatis是一个简化和实现了 Java 数据持久化层(persistence layer)的开源框架，它抽象了大量的JDBC冗余代码，并提供了一个简单易用的API和数据库交互。
+		MyBatis的前身是iBATIS，iBATIS于2002年由ClintonBegin创建。MyBatis3是iBATIS的全新设计，支持注解和Mapper。
+		MyBatis流行的主要原因在于它的简单性和易使用性。在Java应用程序中，数据持久化层涉及到的工作有：将从数据库查询到的数据生成所需要的Java对象；将Java对象中的数据通SQL持久化到数据库中。
+		MyBatis通过抽象底层的JDBC代码，自动化SQL结果集产生Java对象、Java对象的数据持久化数据库中的过程使得对SQL的使用变得容易。
+
+	1.2 Git 是一个免费开源的分布式版本控制系统，被用于高速有效地处理大大小小项目中所有文件,在软件开发中使用的其他版本控制软件类似与SVN、VSS、CVS等等.
+
+	1.3 作为一个分布式的版本控制系统，在Git中并不存在主库这样的概念，每一份复制出的库都可以独立使用，任何两个库之间的不一致之处都可以进行合并。github以托管各种git库，并提供一个web界面，可以说是一款易于使用的git图形客户端。我们熟知的spring、struts、Hibernate等框架的源代码在github上面都可以找到其源代码
+
+	1.4 iBATIS一词来源于internet和abatis的组合，是一个在2002年发起的开放源代码项目。于2010年6月16号被谷歌托管，改名为MyBatis。
+		ibatis的官网 http://ibatis.apache.org/ 进去官网会看到下面提示:
+		apache ibatis is retired at the apache software foundation (2010/06/16)
+		the original project team has moved to mybatis hosted at google code. see http://www.mybatis.org/ for more.
+		然而http://www.mybatis.org/这个地址一直处于打不开状态...
+		但是我们最终是可以在github中找到mybatis的相关下载的:
+		mybatis在github中的地址
+		https://github.com/mybatis/mybatis-3
+		最新版本的mybatis的下载地址
+		https://github.com/mybatis/mybatis-3/releases
+		doc文档
+		http://www.mybatis.org/mybatis-3/
+	
+	1.5 当前有很多Java实现的持久化框架，而MyBatis流行起来有以下原因：
+		1.5.1 它消除了大量的JDBC冗余代码
+			Java通过JDBC的API来操作关系型数据库，但是JDBC是一个非常底层的API,我们需要书写大量的代码来完成对数据库的操作。例如一个插入操作(参考之前学习JDBC时候的代码实例)
+			但是使用mybatis来完成相同的插入操作要简单方便灵活的多:
+			第一步:在SQLMapper映射配置文件中配置SQL语句，假定为StudentMapper.xml
+			<insert id="insertStudent" parameterType="Student"> 
+				insert into students(id,name,email)  
+				values(#{id},#{name},#{email}) 
+			</insert> 
+			第二步:创建一个StudentMapper接口
+			public interface StudentMapper{ 
+				void insertStudent(Student student); 
+			} 
+			第三步:编写java代码完成插入操作:
+			SqlSession session = getSqlSessionFactory().openSession(); 
+			StudentMapper mapper = session.getMapper(StudentMapper.class); 
+			mapper.insertStudent(student); 
+			
+			特别之处的是，MyBatis还提供了其他的一些特性来简化持久化逻辑的实现
+			它支持复杂的SQL结果集数据映射到嵌套的对象结构
+			它支持一对一和一对多的结果集和Java对象的映射
+			它支持根据输入的数据构建动态的SQL语句
+		1.5.2 它有低的学习曲线
+			MyBatis能够流行的首要原因之一在于它学习和使用起来非常简单，它取决于你Java和 SQL方面的知识。如果开发人员很熟悉Java和SQL，他们会发现MyBatis入门非常简单。
+		1.5.3 它能很好地与传统数据库协同工作
+			有时我们可能需要用不正规形式与传统数据库协同工作，使用成熟的ORM框架(例如大家熟知的Hibernate)有可能、但是很难跟传统数据库很好地协同工作，因为他们尝试将Java对象静态地映射到数据库的表上.而MyBatis是将查询的结果与Java对象映射起来，这使得MyBatis可以很好地与传统数据库协同工作。你可以根据面相对象的模型创建Java域对象，执行传统数据库的查询，然后将结果映射到对应的Java对象上。
+		1.5.4 它可以接受SQL语句
+			成熟的ORM框架鼓励使用实体对象和在其底层自动产生SQL语句。由于这种的SQL生成方式，我们有可能不能够利用到数据库的一些特有的特性。Hibernate允许执行本地SQL，但是这样会打破持久层和数据库独立的原则。MyBatis框架接受SQL语句，而不是将其对开发人员隐藏起来。由于MyBatis不会产生任何的SQL语句，所以开发人员就要准备SQL语句，这样就可以充分利用数据库特有的特性并且可以准备自定义的查询。另外，MyBatis 对存储过程也提供了支持。
+		1.5.5 它提供了与Spring框架的集成支持
+			MyBatis提供了与流行的依赖注入框架Spring的开包即用的集成支持，这将进一步简化MyBatis的使用
+		1.5.6 它提供了与第三方缓存类库的集成支持
+			MyBatis有内建的SqlSession级别的缓存机制，用于缓存Select语句查询出来的结果。除此之外，MyBatis提供了与多种第三方缓存类库的集成支持，如EHCache，OSCache，Hazelcast等。
+		1.5.7 它引入了更好的性能
+			性能问题是关乎软件应用成功与否的关键因素之一。为了达到更好的性能，需要考虑很多事情，而对很多应用而言，数据持久化层是整个系统性能的关键。MyBatis支持数据库连接池，消除了为每一个请求创建一个数据库连接的开销,MyBatis提供了内建的缓存机制，在SqlSession级别提供了对SQL查询结果的缓存。即:如果你调用了相同的select查询，MyBatis 会将放在缓存的结果返回，而不会去再查询数据库。MyBatis框架并没有大量地使用代理机制，因此对于其他的过度地使用代理的ORM框架而言，MyBatis可以获得更好的性能.
+	
+	1.6 mybatis的jar包
+		mybatis的核心包只有一个mybatis-3.x.0.jar,另外还有一些【可选】的依赖包(日志、代理等所需要的),在下载的压缩包中可以找到.
+	
+	1.7 mybatis框架中一般需要俩种文件:
+		第一种:mybatis的配置文件: mybatis-config.xml,其中包括数据库连接信息，类型别名等等
+			特点:
+				名字一般是固定的
+				位置是src下面
+			示例:
+			<?xml version="1.0" encoding="utf-8"?> 
+			<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN" 
+			"http://mybatis.org/dtd/mybatis-3-config.dtd"> 
+			<configuration> 
+			  <typeAliases> 
+				<typeAlias alias="Student" type="com.briup.pojo.Student" /> 
+			  </typeAliases> 
+			  <environments default="development"> 
+				<environment id="development"> 
+				  <transaction Manager type="JDBC" /> 
+				   <dataSource type="POOLED">
+					<!--
+					<property name="driver" value="com.mysql.jdbc.Driver" /> 
+					<property name="url" value="jdbc:mysql://localhost:3306/test" /> 
+					-->
+					<property name="driver" value="oracle.jdbc.driver.OracleDriver" /> 
+					<property name="url" value="jdbc:oracle:thin:@127.0.0.1:1521:XE" /> 
+					<property name="username" value="test" /> 
+					<property name="password" value="test" /> 
+				  </dataSource> 
+				</environment> 
+			  </environments> 
+			  <mappers> 
+				<mapper resource="com/briup/pojo/StudentMapper.xml" /> 
+			  </mappers> 
+			</configuration> 
+
+
+		第二种:mybatis的映射文件:XxxxxMapper.xml,这个xml文件中包括Xxxx类所对应的数据库表的各种增删改查sql语句
+			特点:
+				名字一般为XxxxMapper.xml,Xxxx是对应类的名字
+				位置不固定,一般放到一个专门的package里面
+			实例:
+			<?xml version="1.0" encoding="utf-8"?> 
+			<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+			"http://mybatis.org/dtd/mybatis-3-mapper.dtd"> 
+			<mapper namespace="com.briup.pojo.StudentMapper"> 
+			  <resultMap type="Student" id="StudentResult"> 
+				<id property="id" column="id" /> 
+				<result property="name" column="name" /> 
+				<result property="email" column="email" /> 
+			  </resultMap> 
+			  <select id="findAllStudents" resultMap="StudentResult"> 
+					select * from students 
+			  </select> 
+			  <select id="findStudentById" parameterType="int" resultType="Student"> 
+				 select id as studid, name, email 
+				 from students where id=#{id} 
+			  </select> 
+			  <insert id="insertStudent" parameterType="Student"> 
+				 insert into students(id,name,email)  
+				 values(#{id },#{name},#{email}) 
+			  </insert> 
+			</mapper> 
+	
+	1.8 mybatis中的映射接口XxxxMapper.java(对XxxxMapper.xml中的sql语句进行映射)
+		mybatis中除了必须的jar包、各种xml配置文件之外,一般还需要有调用sql语句执行的接口XxxxMapper.java
+		示例:
+		public interface StudentMapper{
+			List<Student> findAllStudents(); 
+			Student findStudentById(Integer id); 
+			void insertStudent(Student student); 
+		}
+		注意:接口中的方法的名字和XML文件定义的SQL映射语句的名称要相同
+		同时我们不需要去实现该接口,因为mybatis中提供了相应的方式在运行期间动态生成该接口的实现类对象(动态代理技术,spring框架中会想些讲解动态代理).
+
+	1.9 mybatis中的SqlSession接口和sqlSessionFactory接口
+		SqlSession接口的实现类对象是mybatis中最重要的一个对象,我们可以使用该对象动态获得XxxxMapper.java接口的实现类对象,然后就可以调用到XxxxMapper.java接口中方法所映射的sql语句(在xml文件中配置的sql语句)。
+		sqlSessionFactory接口的实现类对象是一个工厂对象,专门负责来产生SqlSession对象的
+		例如:
+		InputStream inputStream = Resources.getResourceAsStream("mybatis-config.xml"); 
+		SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
+		SqlSession sqlSession = sqlSessionFactory.openSession();
+		
+		//第一种执行sql语句的方式  通过XxxxMapper接口的实现类对象来调用
+		//动态获得XxxxMapper接口的实现类
+		StudentMapper studentMapper = sqlSession.getMapper(StudentMapper.class);
+		studentMapper.insertStudent(new Student(1,"tom","123@.qq.com"));
+		
+		//第二种执行sql语句的方式  执行调用XxxxMapper.xml中写好的sql语句
+		//也可以【不通过】Mapper接口执行映射的SQL
+		//然而，使用 Mapper接口是最佳实践
+		//sqlSession.selectOne("com.briup.pojo.StudentMapper.findStudentById",1);
+
+	1.10 编写一个简单的mybatis进行插入数据的实例
+		1.10.1 数据库建表  dob=Date of Birth
+			drop table students;
+			create table students ( 
+				stud_id number primary key, 
+				name varchar2(50) , 
+				email varchar2(50) , 
+				dob date 
+			); 
+		
+		1.10.2 新建一个项目,创建好相应的package及class
+			package com.briup.pojo;
+			import java.util.Date;
+			public class Student {
+				private Integer studId; 
+				private String name; 
+				private String email; 
+				private Date dob;
+				get/set
+			}
+
+		1.10.3 项目中引入mybatis的核心包以及可选的依赖包
+			必须的包  mybatis-3.3.0.jar    ojdbc14.jar
+			可选的包  junit-4.7.jar             log4j-1.2.17.jar
+		1.10.4 mybatis中的配置文件和映射文件分别引入到项目中
+			src下面的mybatis-config.xml:
+			<?xml version="1.0" encoding="UTF-8"?>
+			<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN" 
+			"http://mybatis.org/dtd/mybatis-3-config.dtd">
+			<configuration>
+				<typeAliases>
+					<typeAlias type="com.briup.pojo.Student" alias="Student" />
+				</typeAliases>
+
+				<environments default="development">
+					<environment id="development">
+						<transactionManager type="JDBC"></transactionManager>
+						<dataSource type="POOLED">
+							<property name="driver" value="oracle.jdbc.driver.OracleDriver" /> 
+							<property name="url" value="jdbc:oracle:thin:@127.0.0.1:1521:XE" /> 
+							<property name="username" value="test" />
+							<property name="password" value="test" />
+						</dataSource>
+					</environment>
+				</environments>
+				
+				<mappers>
+					<mapper resource="com/briup/mappers/StudentMapper.xml"/>
+				</mappers>
+				
+			</configuration>
+
+
+
+			com.briup.mappers包下面的StudentMapper.xml:
+
+			<?xml version="1.0" encoding="UTF-8"?>
+			<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+			"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+			<!-- com.briup.mappers.StudentMapper是我们定义接口的全限定名字 这样就可以使用接口调用映射的SQL语句了 这个名字一定要和接口对应上-->
+			<mapper namespace="com.briup.mappers.StudentMapper">
+
+				<resultMap type="Student" id="StudentResult">
+					<id property="studId" column="stud_id" />
+					<result property="name" column="name" />
+					<result property="email" column="email" />
+					<result property="dob" column="dob" />
+				</resultMap>
+
+				<select id="findAllStudents" resultMap="StudentResult">
+					select * from students
+				</select>
+
+				<!-- 列名和属性名字不一致可以给查询的列起一个别名 -->
+				<select id="findStudentById" parameterType="int" resultType="Student">
+					SELECT STUD_ID AS STUDID,NAME,EMAIL,DOB
+					FROM STUDENTS
+					WHERE
+					STUD_ID=#{id}
+				</select>
+				<insert id="insertStudent" parameterType="Student"> 
+					INSERT INTO
+					STUDENTS(STUD_ID,NAME,EMAIL,DOB) 
+					VALUES(#{studId},#{name},#{email},#{dob}) 
+				</insert>
+			</mapper>
+		
+		1.10.5 配置log4j.properties文件中的日志输出:
+			位置src下面
+			内容:
+			log4j.rootLogger=DEBUG, stdout 
+			log4j.appender.stdout=org.apache.log4j.ConsoleAppender 
+			log4j.appender.stdout.layout=org.apache.log4j.PatternLayout 
+			log4j.appender.stdout.layout.ConversionPattern=%d [%-5p] %c - %m%n
+			#show sql
+			log4j.logger.java.sql.ResultSet=INFO  
+			log4j.logger.org.apache=INFO  
+			log4j.logger.java.sql.Connection=DEBUG  
+			log4j.logger.java.sql.Statement=DEBUG  
+			log4j.logger.java.sql.PreparedStatement=DEBUG 
+
+		1.10.6 com.briup.mappers包下面新建一个接口StudentMapper.java,用来对应xml文件中的sql语句(映射),从而方便我们调用
+			package com.briup.mappers;
+			import java.util.List;
+			import com.briup.pojo.Student;
+
+			//创建映射器Mapper接口StudentMapper
+			//方法名和StudentMapper.xml中定义的SQL映射定义名相同
+			//这个其实就是dao层接口(数据访问层,负责和数据库进行交互)
+			public interface StudentMapper {
+				List<Student> findAllStudents(); 
+				Student findStudentById(Integer id); 
+				void insertStudent(Student student);
+			}
+
+		1.10.7 创建一个测试类StudentMapperTest.java
+			package test;
+			import java.io.InputStream;
+			import java.util.Date;
+
+			import org.apache.ibatis.io.Resources;
+			import org.apache.ibatis.session.SqlSession;
+			import org.apache.ibatis.session.SqlSessionFactory;
+			import org.apache.ibatis.session.SqlSessionFactoryBuilder;
+			import org.junit.Test;
+
+			import com.briup.mappers.StudentMapper;
+			import com.briup.pojo.Student;
+
+			public class StudentMapperTest {
+				
+				@Test
+				public void test_insert(){
+					
+					try {
+						InputStream inputStream = Resources.getResourceAsStream("mybatis-config.xml"); 
+						SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
+						SqlSession sqlSession = sqlSessionFactory.openSession();
+						
+						StudentMapper studentMapper = sqlSession.getMapper(StudentMapper.class);
+						Student s = new Student(1,"tom","123@briup.com",new Date());
+						studentMapper.insertStudent(s);
+						sqlSession.commit();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+					
+				}
+			}
+
+		1.10.8 运行成功后会在控制台中看到log4j日志输出的这个程序运行的相关信息
+
+		1.10.9 对mybatis的一些基本封装
+			每次读取配置文件,产生一个工厂对象SqlSessionFactory,然后再生成出SqlSession对象,这个过程虽然并不复杂,但是也都是一些重复的代码流程,所以我们可以对其进行一个简单的封装:
+			package com.briup.utils;
+
+			import java.io.IOException;
+			import java.io.InputStream;
+
+			import org.apache.ibatis.io.Resources;
+			import org.apache.ibatis.session.SqlSession;
+			import org.apache.ibatis.session.SqlSessionFactory;
+			import org.apache.ibatis.session.SqlSessionFactoryBuilder;
+
+			public class MyBatisSqlSessionFactory {
+				private static SqlSessionFactory sqlSessionFactory;
+				
+				public static SqlSessionFactory getSqlSessionFactory(){
+					if(sqlSessionFactory == null){
+						InputStream inputStream = null;
+						try {
+							inputStream = Resources.getResourceAsStream("mybatis-config.xml"); 
+							sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
+						} catch (IOException e) {
+							e.printStackTrace();
+							throw new RuntimeException(e.getCause());
+						}
+					}
+					return sqlSessionFactory;
+				}
+				
+				public static SqlSession openSession() { 
+					return openSession(false); 
+				}
+				public static SqlSession openSession(boolean autoCommit) { 
+					return getSqlSessionFactory().openSession(autoCommit); 
+				}
+				
+			}
+
+			之后每次使用的时候只需要调用该类中的静态方法openSession即可
+			上面的代码可简写为: //注意事务是自动提交还是手动提交
+			MyBatisSqlSessionFactory.openSession().getMapper(StudentMapper.class).insertStudent(s);
+
+			
+			*******************************************************
+			注意:xml文件中写的sql语句,最后面不要写分号,否则会报错误,ORA-00911: 无效字符
+			*******************************************************
+
+二 mybatis配置详解
+	MyBatis最关键的组成部分是SqlSessionFactory，我们可以从中获取SqlSession， 并执行映射的SQL语句。SqlSessionFactory对象可以通过基于XML的配置信息或者JavaAPI创建。
+	
+	2.1 使用xml配置Mybatis
+		构建SqlSessionFactory最常见的方式是基于XML配置。下面的 mybatis-config.xml展示了一个典型的MyBatis配置文件的样子:
+		<?xml version="1.0" encoding="utf-8"?> 
+		<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN" 
+		"http://mybatis.org/dtd/mybatis-3-config.dtd"> 
+		<configuration> 
+		  <properties resource="application.properties"> 
+			<property name="username" value="db_user" /> 
+			<property name="password" value="verysecurepwd" /> 
+		  </properties> 
+		  <settings> 
+			<setting name="cacheEnabled" value="true" /> 
+		  </settings> 
+		  <typeAliases> 
+			<typeAlias alias="Student" type="com.briup.pojo.Student" /> 
+			<package name="com.briup.pojo" /> 
+		  </typeAliases> 
+		  <typeHandlers> 
+			<typeHandler handler="com.mybatis3.typehandlers.PhoneTypeHandler" /> 
+			<package name="com.briup.typehandlers" /> 
+		  </typeHandlers> 
+		  <environments default="development"> 
+			<environment id="development"> 
+			  <transactionManager type="JDBC" /> 
+			  <dataSource type="POOLED"> 
+				<property name="driver" value="${jdbc.driverClassName}" /> 
+				<property name="url" value="${jdbc.url}" /> 
+				<property name="username" value="${jdbc.username}" /> 
+				<property name="password" value="${jdbc.password}" /> 
+			  </dataSource> 
+			</environment> 
+			<environment id="production"> 
+			  <transactionManager type="MANAGED" /> 
+			  <dataSource type="JNDI"> 
+				<property name="data_source" value="java:comp/jdbc/MyBatisDemoDS" /> 
+			  </dataSource> 
+			</environment> 
+		  </environments> 
+		  <mappers> 
+			<mapper resource="com/briup/mappers/StudentMapper.xml" /> 
+			<mapper url="file:///D:/mybatisdemo/mappers/StudentMapper.xml" /> 
+			<mapper class="com.briup.mappers.StudentMapper" /> 
+		  </mappers> 
+		</configuration> 
+
+		2.1.1 environments元素
+		environments是配置mybatis当前工作的数据库环境的地方
+		MyBatis可以支持配置多个dataSource环境，可以将应用部署到不同的环境上，如DEV(开发环境)，TEST（测试环境），QA（质量评估环境）,UAT(用户验收环境),PRODUCTION（生产环境），可以通过将默认environments值设置成想要的environment的id值。
+
+		有时候，我们可能需要在相同的应用下使用多个数据库,比如我们可能有shoppingcart数据库来存储所有的订单明细；使用reports数据库存储订单明细的合计，用作报告。(也就是如果系统在运行期间如果有【切换数据库环境】的需求,mybatis中也可以很轻松的实现).
+		如果你的应用需要连接多个数据库，你需要将每个数据库配置成独立的环境，并且为每一个数据库创建一个SqlSessionFactory
+		例如:
+		<environments default="shoppingcart"> 
+		  <environment id="shoppingcart"> 
+			<transactionManager type="MANAGED" /> 
+			<dataSource type="JNDI"> 
+			  <property name="data_source" value="java:comp/jdbc/ShoppingcartDS" /> 
+			</dataSource> 
+		  </environment> 
+		  <environment id="reports"> 
+			<transaction Managertype="MANAGED" /> 
+			<dataSource type="JNDI"> 
+			  <property name="data_source" value="java:comp/jdbc/ReportsDS" /> 
+			</dataSource> 
+		  </environment> 
+		</environments> 
+
+		我们可以为以上每个环境创建一个SqlSessionFactory
+		java代码: 
+		inputStream = Resources.getResourceAsStream("mybatis-config.xml"); 
+		//默认的环境 default
+		SqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
+
+		//统计明细的环境
+		cartSqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream, "shoppingcart"); 
+
+		//统计报表的环境
+		reportSqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream, "reports");
+		
+		注意:对于environments,我们可以在其中配置多个environment子元素,同时还需要在environment中配置dataSource和transactionManager元素。
+ 
+		
+		2.1.2 dataSource元素
+		dataSource表示的是数据源:至少会包括该连接数据库的各种信息
+		<dataSource type="POOLED"> 
+		  <property name="driver" value="${jdbc.driverClassName}" /> 
+		  <property name="url" value="${jdbc.url}" /> 
+		  <property name="username" value="${jdbc.username}" /> 
+		  <property name="password" value="${jdbc.password}" /> 
+		</dataSource> 
+
+		dataSource的类型type属性可以配置成其内置类型之一，如UNPOOLED，POOLED，JNDI。
+		如果将类型设置成UNPOOLED，MyBatis会为每一个数据库操作创建一个新的连接，使用完了并关闭它，该方式适用于只有小规模数量并发用户的简单应用程序上。
+	 
+		如果将属性设置成POOLED，MyBatis会创建一个数据库连接池，连接池中的一个连接将会被用作数据库操作。一旦数据库操作完成，MyBatis会将此连接返回给连接池。在开发或测试环境中，经常使用此种方式。
+	  
+		如果将类型设置成JNDI(Java Naming and Directory Interface , Java命名和目录接口, 是SUN公司提供的一种标准的Java命名系统接口)，MyBatis从在应用服务器向配置好的JNDI数据源dataSource获取数据库连接。在生产环境中，优先考虑这种方式。
+	 
+		
+		2.1.3 transactionManager元素 :事务管理器 
+		MyBatis支持两种类型的事务管理器：JDBC 和 MANAGED. 
+		JDBC事务管理器的使用，是在【jdbc程序】负责管理数据库连接的生命周期（提交、回退等等）的时候。如果将TransactionManager 属性设置成JDBC，MyBatis内部将使用JdbcTransactionFactory类创建TransactionManager。例如，部署到ApacheTomcat的应用程序，需要应用程序自己管理事务。
+
+		MANAGED 事务管理器的使用，是在【应用服务器】负责管理数据库连接生命周期的时候。如果将TransactionManager属性设置成MANAGED时，MyBatis内部使用ManagedTransactionFactory 类创建事务管理器TransactionManager。例如，当一个Java EE的应用程序部署在类似JBoss，WebLogic，GlassFish应用服务器上时，它们会使用EJB进行应用服务器的事务管理能力。在这些管理环境中，你可以使用MANAGED事务管理器。
+		注：Managed 是托管的意思，即我们编写的应用程序本身不去管理事务，而是把事务管理交给应用所在的服务器进行管理。
+ 
+		2.1.4 properties元素
+		属性配置元素properties可以将配置值写死到mybatis-config.xml中,也可以具体到一个属性文件中,并且使用属性文件的key名作为占位符.
+		在上述的配置中，我们将数据库连接属性配置到了application.properties文件中，并且为driver，URL等属性使用了占位符.
+
+		在applications.properties文件中配置数据库连接参数，如下所示：
+		jdbc.driverClassName=oracle.jdbc.driver.OracleDriver 
+		jdbc.url=jdbc:oracle:thin:@127.0.0.1:1521:XE
+		jdbc.username=test 
+		jdbc.password=test
+		
+		在mybatis-config.xml文件中，为属性使用application.properties文件中定义的占位符：
+		<!-- 读取application.properties文件中的数据key-value的形式 -->
+		<properties resource="application.properties">
+		  <!-- 注意:是applications.properties文件中的值优先级高 -->
+		  <property name="jdbc.username" value="briup" /> 
+		  <property name="jdbc.password" value="briup" /> 
+		</properties> 
+		<environments default="development"> 
+			<environment id="development"> 
+			  <transactionManager type="JDBC" /> 
+			  <dataSource type="POOLED"> 
+				<property name="driver" value="${jdbc.driverClassName}" /> 
+				<property name="url" value="${jdbc.url}" /> 
+				<property name="username" value="${jdbc.username}" /> 
+				<property name="password" value="${jdbc.password}" /> 
+			  </dataSource> 
+			</environment> 
+		</environments>  
+
+
+		2.1.5 typeAliases元素: 类型别名 
+		在SQLMapper配置文件中，对于resultType和parameterType属性值，我们需要使用JavaBean 的完全限定名。
+		例如:
+		<select id="findStudentById" parameterType="int"  
+			resultType="com.briup.pojo.Student"> 
+				SELECT STUD_ID AS ID, NAME, EMAIL, DOB  
+				FROM STUDENTS WHERE STUD_ID=#{Id} 
+		</select> 
+		<update id="updateStudent" parameterType="com.briup.pojo.Student"> 
+			UPDATE STUDENTS  
+				SET NAME=#{name}, EMAIL=#{email}, DOB=#{dob}  
+				WHERE STUD_ID=#{id} 
+		</update> 
+
+		注:parameterType表示将来调用这个sql语句的时候所传的参数的类型(参数值或者参数对象里面的属性值 用来替换sql语句中的占位符)
+		resultType表示将来调用这个sql语句的时候所返回的结果的类型(方便mybatis给我们自动封装结果集)
+		
+		这里我们为resultType和parameterType属性值设置为Student类型的完全限定名：com.briup.com.Student
+		
+		我们可以为完全限定名取一个别名（alias），然后就可以在需要使用完全限定名的地方使用别名，而不是到处使用完全限定名。如下例子所示，为完全限定名起一个别名：
+		<type Aliases> 
+		  <type Alias alias="Student" type="com.briup.pojo.Student" /> 
+		  <type Alias alias="Teacher" type="com.briup.pojo.Teacher" /> 
+		</type Aliases> 
+
+		然后在SQLMapper映射文件中, 如下使用Student的别名：
+		<select id="findStudentById" parameterType="int" resultType="Student"> 
+			SELECT STUD_ID AS ID, NAME, EMAIL, DOB  
+			FROM STUDENTS WHERE STUD_ID=#{id} 
+		</select> 
+		<update id="updateStudent" parameterType="Student"> 
+			UPDATE STUDENTS  
+				SET NAME=#{name}, EMAIL=#{email}, DOB=#{dob}  
+			WHERE STUD_ID=#{id} 
+		</update> 
+		
+		你可以不用为每一个JavaBean单独定义别名,你可以为配置出需要取别名的类的所在的包(package)，MyBatis会自动扫描包内定义的类，然后分别为每个类注册一个小写字母开头的简单类名形式的别名。如下所示：
+		<type Aliases> 
+		  <package name="com.briup.pojo" /> 
+		</type Aliases> 
+		如果Student.java和 Teacher.java 定义在com.briup.pojo包中，则 com.briup.pojo.Student的别名会被注册为student。而com.briup.pojo.Teacher别名将会被注册为teacher
+	
+		还有另外一种方式为JavaBeans起别名，使用注解 @Alias: 
+		@Alias("stu") 
+		public class Student{
+			....
+		} 
+		@Alias注解将会覆盖配置文件中的<typeAliases>定义。
+		注意: @Alias 要和<package name=""/>标签配合使用,Mybatis会自动查看指定包内的类别名注解,如果没有这个注解,那么默认的别名就是类的名字
+
+		2.1.6 typeHandlers元素: 类型处理器 
+		当MyBatis将一个Java对象作为输入参数执行INSERT语句操作时，它会创建一个PreparedStatement对象，并且使用setXXX()方法对占位符设置相应的参数值 。这里，XXX可以是int，String，Date 等 Java对象属性类型的任意一个。示例如下：
+		<insert id="insertStudent" parameterType="Student"> 
+			INSERT INTO STUDENTS(STUD_ID,NAME,EMAIL,DOB)  
+			VALUES(#{studId},#{name},#{email},#{dob}) 
+		</insert> 
+
+		为执行这个语句，MyBatis将采取以下一系列动作：
+			创建一个有占位符的PreparedStatement接口，如下：
+			Prepared Statement ps = connection.prepare Statement 
+                    ("INSERT INTO STUDENTS(STUD_ID,NAME,EMAIL,DOB) VALUES(?,?,?,?)"); 
+			检查Student对象的属性studId的类型，然后使用合适setXXX方法去设置参数值。这里studId是Integer类型，所以会使用setInt()方法：ps.setInt(1,student.getStudId()); 
+
+			类似地，对于name和email属性都是String类型MyBatis使用setString()方法设置参数。
+			至于dob属性, MyBatis会使用setDate()方法设置dob处占位符位置的值。
+			MyBaits会将java.util.Date类型转换为java.sql.Timestamp并设值：
+			ps.setTimestamp(4, new Timestamp((student.getDob()).getTime())); 
+
+		但MyBatis是怎么知道对于Integer类型属性使用setInt()和String类型属性使用setString()方法呢？其实MyBatis是通过使用类型处理器typeHandlers来决定这么做的。
+		
+		MyBatis对于以下的类型使用内置的类型处理器：所有的基本数据类型、基本类型的包装类型、 byte[]、java.util.Date、java.sql.Date、java,sql.Time、java.sql.Timestamp、java枚举类型等。所以当MyBatis发现属性的类型属于上述类型，他会使用对应的类型处理器将值设置到PreparedStatement中，同样地，当SQL结果集封装成java类对象的时候，也有类似的过程。
+ 
+		那如果有一个自定义的类型，怎么存储存储到数据库呢？示例如下：假设表STUDENTS 有一个 PHONE 字段，类型为 VARCHAR2(15)，而 Student类有一个自定义类型属性(PhoneNumber类)
+		
+		alter table students add phone varchar2(15);
+		alter table students drop column phone;
+
+		或者:
+		drop table students;
+		create table students ( 
+			stud_id number primary key, 
+			name varchar2(50) , 
+			email varchar2(50) , 
+			dob date ,
+			phone varchar2(15)
+		);
+
+		java代码:
+		PhoneNumber 类定义类型的 phoneNumber 属性。
+ 
+		public class PhoneNumber{ 
+			private String countryCode; 
+			private String stateCode; 
+			private String number; 
+			public PhoneNumber(){ 
+			} 
+			public PhoneNumber(String countryCode, String stateCode, String number) { 
+				this.countryCode = countryCode; 
+				this.stateCode = stateCode; 
+				this.number = number; 
+			} 
+			public String getAsString() { 
+				return countryCode + "-" + stateCode + "-" + number; 
+			} 
+			// Setters and getters 
+		} 
+		 
+		public class Student{ 
+			private Integer id; 
+			private String name; 
+			private String email; 
+			private PhoneNumber phone; 
+			// Setters and getters 
+		} 
+
+		
+		xml配置:
+		<insert id="insertStudent" parameter Type="Student"> 
+			insert into students(name,email,phone) 
+			values(#{name},#{email},#{phone}) 
+		</insert> 
+	
+		这里，参数对象中的属性phone的值需要传递给#{phone}；而参数对象的属性phone是 PhoneNumber类型。但是，MyBatis 并不知道该怎样来处理这个类型的对象。
+		为了让MyBatis明白怎样处理这个自定义的Java对象类型，如PhoneNumber，我们可以创建一个自定义的类型处理器,MyBatis提供了抽象类BaseTypeHandler<T> ，我们可以继承此类创建自定义类型处理器。
+		代码如下所示:
+			package com.briup.typehandlers;
+
+			import java.sql.CallableStatement;
+			import java.sql.PreparedStatement;
+			import java.sql.ResultSet;
+			import java.sql.SQLException;
+
+			import org.apache.ibatis.type.BaseTypeHandler;
+			import org.apache.ibatis.type.JdbcType;
+
+			import com.briup.pojo.PhoneNumber;
+
+			public class PhoneTypeHandler extends BaseTypeHandler<PhoneNumber>{
+
+				//遇到PhoneNumber参数的时候应该如何在ps中设置值
+				@Override
+				public void setNonNullParameter(PreparedStatement ps, int i, PhoneNumber parameter, JdbcType jdbcType)
+						throws SQLException {
+					ps.setString(i, parameter.getAsString());
+				}
+
+				//查询中遇到PhoneNumber类型的应该如何封装(使用列名封装)
+				@Override
+				public PhoneNumber getNullableResult(ResultSet rs, String columnName) throws SQLException {
+					return new PhoneNumber(rs.getString(columnName));
+				}
+
+				//查询中遇到PhoneNumber类型的应该如何封装(使用列的下标)
+				@Override
+				public PhoneNumber getNullableResult(ResultSet rs, int columnIndex) throws SQLException {
+					return new PhoneNumber(rs.getString(columnIndex));
+				}
+
+				//CallableStatement使用中遇到了PhoneNumber类型的应该如何封装
+				@Override
+				public PhoneNumber getNullableResult(CallableStatement cs, int columnIndex) throws SQLException {
+					return new PhoneNumber(cs.getString(columnIndex));
+				}
+
+			}
+		
+		注意:使用ps.setString()和rs.getString()方法是 :因为在数据库的表中phone列是VARCHAR类型。
+ 
+		最后一旦我们实现了自定义的类型处理器，我们需要在mybatis-config.xml中注册它：
+		<?xml version="1.0" encoding="utf-8"?> 
+		<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN" 
+		"http://mybatis.org/dtd/mybatis-3-config.dtd"> 
+		<configuration> 
+		  <properties resource="application.properties" /> 
+		  <type Handlers> 
+			<type Handler handler="com.briup.typehandlers.PhoneTypeHandler" /> 
+		  </type Handlers> 
+		</configuration> 
+		注册PhoneTypeHandler后, MyBatis就能够将Phone类型的对象值存储到VARCHAR类型的列上。
+ 
+
+		
+		2.1.7 settings元素: 全局参数设置
+		注意:大多数情况下，【这些参数使用它们的默认值即可】
+		为满足应用特定的需求，MyBatis默认的全局参数设置可以被覆盖掉，如下所示：
+		<settings>
+		  <setting name="cacheEnabled" value="true" /> 
+		  <setting name="lazyLoadingEnabled" value="true" /> 
+		  <setting name="multipleResultSetsEnabled" value="true" /> 
+		  <setting name="useColumnLabel" value="true" /> 
+		  <setting name="useGeneratedKeys" value="false" /> 
+		  <setting name="autoMappingBehavior" value="PARTIAL" /> 
+		  <setting name="defaultExecutorType" value="SIMPLE" /> 
+		  <setting name="defaultStatementTimeout" value="25000" /> 
+		  <setting name="safeRowBoundsEnabled" value="false" /> 
+		  <setting name="mapUnderscoreToCamelCase" value="false" /> 
+		  <setting name="localCacheScope" value="SESSION" /> 
+		  <setting name="jdbcTypeForNull" value="OTHER" /> 
+		  <setting name="lazyLoadTriggerMethods" value="equals,clone,hash Code ,to String" /> 
+		  <setting name="proxyFactory" value="JAVASSIST" /> 
+		  <setting name="aggressiveLazyLoading" value="true" /> 
+		  <setting name="logImpl" value="LOG4J " /> 
+		  <setting name="logPrefix" value="LOG4J " /> 
+		  <setting name="callSettersOnNulls" value="false " /> 
+		</settings> 
+
+
+		<settings>
+		  <!-- 这个配置使全局的映射器启用或禁用缓存 -->
+		  <setting name="cacheEnabled" value="true" />
+
+		  <!-- 全局启用或禁用延迟加载。当禁用时，所有关联对象都会即时加载 -->
+		  <setting name="lazyLoadingEnabled" value="true" />
+
+		  <!-- 允许或不允许多种结果集从一个单独的语句中返回（需要适合的驱动） -->
+		  <setting name="multipleResultSetsEnabled" value="true" /> 
+
+		  <!-- 使用列标签代替列名。不同的驱动在这方便表现不同。参考驱动文档或充分测试两种方法来决定所使用的驱动 -->
+		  <setting name="useColumnLabel" value="true" /> 
+
+		  <!-- 允许JDBC支持生成的键。需要适合的驱动。 -->
+		  <setting name="useGeneratedKeys" value="false" /> 
+
+		  <!-- 指定MyBatis如何自动映射列到字段/属性。PARTIAL只会自动映射简单、没有嵌套的结果。FULL会自动映射任意复杂的结果（嵌套的或其他情况） -->
+		  <setting name="autoMappingBehavior" value="PARTIAL" />
+		  
+		  <!-- 配置默认的执行器。SIMPLE执行器没有什么特别之处。REUSE执行器重用预处理语句。BATCH执行器重用语句和批量更新 -->
+		  <setting name="defaultExecutorType" value="SIMPLE" /> 
+
+		  !-- 设置超时时间，它决定驱动等待一个数据库响应的时间 -->
+		  <setting name="defaultStatementTimeout" value="25000" /> 
+		  
+		  <!-- 允许在嵌套语句中使用分页（RowBounds）默认false -->
+		  <setting name="safeRowBoundsEnabled" value="false" /> 
+
+		  <!-- 是否开启自动驼峰命名规则（camel case）映射，即从经典数据库列名 A_COLUMN 到经典 Java 属性名 aColumn 的类似映射。默认false -->
+		  <setting name="mapUnderscoreToCamelCase" value="false" /> 
+
+		  <!-- MyBatis 利用本地缓存机制（Local Cache）防止循环引用（circular references）和加速重复嵌套查询。 默认值为 SESSION，这种情况下会缓存一个会话中执行的所有查询。 若设置值为 STATEMENT，本地会话仅用在语句执行上，对相同 SqlSession 的不同调用将不会共享数据。 -->
+		  <setting name="localCacheScope" value="SESSION" /> 
+
+		  <!-- 当没有为参数提供特定的 JDBC 类型时，为空值指定 JDBC 类型。 某些驱动需要指定列的 JDBC 类型，多数情况直接用一般类型即可，比如 NULL、VARCHAR 或 OTHER。 -->
+		  <setting name="jdbcTypeForNull" value="OTHER" />
+
+		  <!-- 指定对象的哪个方法触发一次延迟加载。 -->
+		  <setting name="lazyLoadTriggerMethods" value="equals,clone,hashCode ,toString" /> 
+
+		  <!-- CGLIB | JAVASSIST 默认JAVASSIST(MyBatis 3.3 or above)  -->
+		  <!-- 指定 Mybatis 创建具有延迟加载能力的对象所用到的代理工具。 -->
+		  <setting name="proxyFactory" value="JAVASSIST" /> 
+		  <!-- 当启用时，对任意延迟属性的调用会使带有延迟加载属性的对象完整加载；反之，每种属性将会按需加载。 -->
+		  <setting name="aggressiveLazyLoading" value="true" /> 
+			
+		  <!-- 指定 MyBatis 所用日志的具体实现，未指定时将自动查找。 -->
+		  <setting name="logImpl" value="LOG4J " /> 
+
+		  <!-- 指定 MyBatis 增加到日志名称的前缀。值可以是任意字符串 -->
+		  <setting name="logPrefix" value="LOG4J " /> 
+
+		  <!-- 指定当结果集中值为 null 的时候是否调用映射对象的 setter（map 对象时为 put）方法，这对于有 Map.keySet() 依赖或 null 值初始化的时候是有用的。注意基本类型（int、boolean等）是不能设置成 null 的。 默认false-->
+		  <setting name="callSettersOnNulls" value="false " /> 
+		</settings> 
+
+
+
+		2.1.8 mappers元素: SQL映射
+		SQLMapper文件中包含的SQL映射语句将会被应用通过使用其标签中的id值来执行。我们需要在mybatis-config.xml文件中配置SQLMapper文件的位置。
+		<mappers> 
+		  <mapper resource="com/briup/mappers/StudentMapper.xml" /> 
+		  <mapper url="file:///D:/mybatisdemo/app/mappers/StudentMapper.xml" /> 
+		  <mapper class="com.briup.mappers.StudentMapper" /> 
+		  <package name="com.briup.mappers" /> 
+		</mappers> 
+
+		以上每一个<mapper> 标签都可以从不同类型的资源中加载映射mapper：
+		resource属性用来指定在classpath中的mapper文件。
+		url属性用来通过完全文件系统路径或者web URL地址来指向mapper文件
+		class属性用来指向一个mapper接口
+		package属性用来指向可以找到Mapper接口的包名
+ 
+
+	2.2 使用Java API配置MyBatis (属于了解的内容,因为有了灵活的配置配置方法,这个方式几乎不用)
+		MyBatis的SqlSessionFactory接口除了使用基于XML的配置创建外也可以通过JavaAPI编程式地被创建。每在XML中配置的元素，都可以编程式的创建。
+		因为mybatis框架读取了我们配置的mybatis-config.xml中配置信息之后,然后利用这些信息去执行代码创建出我们需要的SqlSessionFactory,再从而进一步得到sqlSession,最后再进行各种数据库操作。
+		所以其实我们完全可以不去配置任何信息直接把信息写在代码中,然后在按着之前的顺序创建出我们需要的SqlSessionFactory,再从而进一步得到sqlSession,最后再进行各种数据库操作。只是这样做再大多数时候都会降低代码的灵活性,所以我们基本上接触的框架都是有相应的配置文件的.
+
+		例如:使用Java API创建SqlSessionFactory对象,之前是读取配置文件之后再创建,现在是自己把信息写到代码中,然后再创建该对象
+		public static SqlSessionFactory getSqlSessionFactory() { 
+			SqlSessionFactory sqlSessionFactory = null; 
+			try { 
+				DataSource dataSource = DataSourceFactory.getDataSource(); 
+				TransactionFactory transactionFactory = new JdbcTransactionFactory(); 
+				Environment environment = new Environment("development", transactionFactory, dataSource); 
+				Configuration configuration = new Configuration(environment); 
+				configuration.getTypeAliasRegistry().registerAlias("student",Student.class); 
+				configuration.getTypeHandlerRegistry().register(PhoneNumber.class, PhoneTypeHandler.class);
+				configuration.addMapper(StudentMapper.class); 
+				sqlSessionFactory = new SqlSessionFactoryBuilder(). 
+				build(configuration); 
+			} 
+			catch (Exception e) { 
+				throw new RuntimeException(e); 
+			} 
+			return sqlSessionFactory; 
+		} 
+
+		类似的,每个在XML中配置的元素，都可以编程式的创建.
+		注:这里就不一一介绍了，因为绝大多数情况下我们还是不会把配置信息直接写到代码中的
+
+	2.3 自定义MyBatis日志
+	MyBatis使用其内部LoggerFactory作为真正的日志类库使用的门面。其内部的LaggerFactory会将日志记录任务委托给如下的所示某一个日志实现，日志记录优先级由上到下顺序递减：
+	SLF4J 
+	Apache Commons Logging 
+	Log4j2 
+	Log4j 
+	JDK logging 
+
+	如果MyBatis未发现上述日志记录实现，则MyBatis的日志记录功能无效,如果你的运行环境中，在classpath中有多个可用的日志类库，并且你希望MyBaits使用某个特定的日志实现，你可以通过调用以下其中一个方法：
+	org.apache.ibatis.logging.LogFactory.useSlf4jLogging(); 
+	org.apache.ibatis.logging.LogFactory.useLog4JLogging(); 
+	org.apache.ibatis.logging.LogFactory.useLog4J2Logging(); 
+	org.apache.ibatis.logging.LogFactory.useJdkLogging(); 
+	org.apache.ibatis.logging.LogFactory.useCommonsLogging(); 
+	org.apache.ibatis.logging.LogFactory.useStdOutLogging(); 
+
+	注:
+	如果你想自定义MyBatis日志记录，你应该在调用任何其它方法之前调用以上的其中一个方法
+
+ 
+三 使用XML配置SQL映射器
+	关系型数据库和SQL是经受时间考验和验证的数据存储机制。和其他的ORM 框架如Hibernate不同，MyBatis鼓励开发者可以直接使用数据库，而不是将其对开发者隐藏，因为这样可以充分发挥数据库服务器所提供的SQL语句的巨大威力。
+	与此同时，MyBaits消除了书写大量冗余代码的痛苦，它让使用SQL更容易。在代码里直接嵌套SQL语句是很差的编码实践，并且维护起来困难。MyBaits使用了映射文件或注解来配置SQL语句。
+ 
+	3.1 映射器文件和映射器接口
+		我们已经看见了一些在映射器配置文件中配置基本的映射语句，以及怎样使用SqlSession对象调用它们的例子。现在让我们看一下在com.briup.mappers包中的StudentMapper.xml  配置文件内，是如何配置id为”findStudentById”的SQL语句的，代码如下：
+		<?xml version="1.0" encoding="utf-8"?> 
+		<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+		"http://mybatis.org/dtd/mybatis-3-mapper.dtd"> 
+		<mapper namespace="com.briup.mappers.StudentMapper"> 
+		  <select id="findStudentById" parameterType="int" resultType="Student"> 
+			select stud_id as studId, name, email, dob  
+			from students where stud_id=#{studId} 
+		  </select> 
+		</mapper> 
+		我们可以通过下列代码调用findStudentById映射的SQL语句: 
+		public Student findStudentById(Integer studId) { 
+			SqlSession sqlSession = MyBatisSqlSessionFactory.openSession(); 
+			try{ 
+				Student student = sqlSession.selectOne("com.briup.mappers.StudentMapper.findStudentById", studId); 
+				return student; 
+			} 
+			finally { 
+				sql Session.close(); 
+			} 
+		} 
+
+
+		我们可以通过字符串（字符串形式为：映射器配置文件所在的包名的namespace + 在文件内定义的语句id，如上，即包名com.briup.mappers.StudentMapper和语句id的值findStudentById组成）调用映射的SQL语句，但是这种方式容易出错。你需要检查映射器配置文件中的定义，以保证你的输入参数类型和结果返回类型是有效的。
+		
+		【重点部分:】
+		MyBatis通过使用映射器Mapper接口提供了更好的调用映射语句的方法。一旦我们通过映射器配置文件配置了映射语句，我们可以创建一个完全对应的一个映射器接口，xml映射文件中的namespace属性值和映射接口的全限定名需要保持一致。映射器接口中的方法签名也跟映射器配置文件中完全对应：方法名和配置文件中id值一致；方法参数类型和parameterType属性值一种；方法返回值类型和returnType属性值一致。
+ 
+		上述的StudentMapper.xml文件,我们可以创建一个映射器接口StudentMapper.java如下：
+		 
+		package com.briup.mappers; 
+		public interface StudentMapper{ 
+			Student findStudentById(Integer id); 
+		} 
+		在Student Mapper.xml映射器配置文件中，其名空间namespace应该跟StudentMapper接口的全限定名保持一致。另外，StudentMapper.xml中语句id, parameterType，returnType 应该分别和StudentMapper接口中的方法名，参数类型，返回值相对应。
+ 
+		使用映射器接口我们可以以类型安全的形式调用调用映射语句。如下所示：
+		 
+		public Student findStudentById(Integer studId){ 
+			SqlSession sqlSession = MyBatisSqlSessionFactory.openSession();  
+			try { 
+				StudentMapper studentMapper = sqlSession.getMapper(StudentMapper.class); 
+
+				return student Mapper.findStudentById(studId); 
+			} 
+			finally { 
+				sqlSession.close(); 
+			} 
+		} 
+
+
+	3.2 映射语句
+	MyBatis提供了多种元素来配置不同类型的语句，如SELECT，INSERT，UPDATE，DELETE。让我们看看如何具体配置映射语句
+		
+		3.2.1 INSERT 插入语句
+		一个INSERT语句可以在<insert>标签元素在映射器XML配置文件中配置，如下所示：
+		<insert id="insertStudent" parameterType="Student"> 
+			INSERT INTO STUDENTS(STUD_ID,NAME,EMAIL, PHONE) VALUES(#{studId},#{name},#{email},#{phone}) 
+		</insert> 
+		这里我们设置一个ID属性为insertStudent，可以在名空间 com.briup.mappers.StudentMapper.insertStudent中唯一标识该sql语句。parameterType 属性是一个完全限定类名或者是一个类型别名（alias）。
+		
+		我们可以如下调用这个语句：
+		int count =  sqlSession.insert("com.briup.mappers.StudentMapper.insertStudent", student); 
+		sqlSession.insert() 方法返回执行 INSERT 语句后所影响的行数。
+		
+		如果不使用名空间（namespace）和语句 id 来调用映射语句，你可以通过创建一个映射器Mapper 接口，并以类型安全的方式调用方法，如下所示：
+		package com.briup.mappers; 
+		public interface Student Mapper{ 
+			int insertStudent(Student student); 
+		} 
+		你可以如下调用insertStudent映射语句：
+		StudentMapper mapper = sqlSession.getMapper(StudentMapper.class); 
+		int count = mapper.insertStudent(student); 
+ 
+		自动生成主键:
+		在上述的INSERT语句中，我们为可以自动生成（auto-generated）主键的列 STUD_ID 插入值。我们可以使用useGeneratedKeys和keyProperty属性让数据库生成auto_increment列的值，并将生成的值设置到其中一个输入对象属性内，如下所示：
+		 
+		<insert id="insertStudent" parameterType="Student" useGeneratedKeys="true" keyProperty="studId"> 
+			INSERT INTO STUDENTS(NAME, EMAIL, PHONE) VALUES(#{name},#{email},#{phone}) 
+		</insert> 
+		这里STUD_ID列值将会被数据库自动生成(如mysql)，并且生成的值会被设置到student对象的studId属性上。
+ 
+		但是有些数据库如Oracle并不支持AUTO_INCREMENT列，其使用序列（SEQUENCE）来生成主键值。假设我们有一个名为my_seq的序列来生成SUTD_ID主键值。使用如下代码来生成主键：
+		drop sequence my_seq;
+		create sequence my_seq;
+
+		<insert id="insertStudent" parameterType="Student"> 
+			<selectKey keyProperty="studId" resultType="int" order="BEFORE"> 
+				SELECT my_seq.nextval FROM DUAL 
+			</selectKey> 
+			INSERT INTO STUDENTS(STUD_ID,NAME,EMAIL, PHONE) 
+				VALUES(#{studId},#{name},#{email},#{phone}) 
+		</insert> 
+		这里我们使用了<selectKey>子元素来生成主键值，并将值保存到Student对象的studId 属性上。属性order=“before”表示MyBatis将取得序列的下一个值作为主键值，并且在执行INSERT语句之前将值设置到studId属性上。
+ 
+		注:SelectKey需要注意order属性，像MySQL、SQLServer等一类支持自动增长类型的数据库中，order需要设置为after才会取到正确的值。
+		像Oracle这样取序列的情况，需要设置为before，否则会报错。
+
+	
+		3.2.2 UPDATE 更新语句
+		一个UPDATE SQL语句可以在<update>元素在映射器XML配置文件中配置，如下所示：
+		<update id="updateStudent" parameterType="Student"> 
+			UPDATE STUDENTS SET NAME=#{name}, EMAIL=#{email}, PHONE=#{phone} 
+			WHERE STUD_ID=#{studId} 
+		</update> 
+
+		我们可以如下调用此语句：
+		int noOfRowsUpdated = sqlSession.update("com.briup.mappers.StudentMapper.updateStudent", student); 
+		sqlSession.update()方法返回执行UPDATE语句之后影响的行数。
+	
+		如果不使用名空间（namespace）和语句id来调用映射语句，你可以通过创建一个映射器Mapper接口，并以类型安全的方式调用方法，如下所示：
+		 
+		package com.briup.mappers; 
+		public interface StudentMapper{ 
+			int updateStudent(Student student); 
+		} 
+
+		你可以使用映射器Mapper接口来调用updateStudent语句，如下所示：
+		StudentMapper mapper = sqlSession.getMapper(StudentMapper.class); 
+		int noOfRowsUpdated = mapper.updateStudent(student); 
+
+		
+		3.2.3 DELETE 删除语句
+		一个UPDATE SQL语句可以在<update>元素在映射器XML配置文件中配置，如下所示
+		<delete id="deleteStudent" parameterType="int"> 
+		   DELETE FROM STUDENTS WHERE STUD_ID=#{id} 
+		</delete> 
+
+		我们可以如下调用此语句：
+		int studId = 1; 
+		int noOfRowsDeleted = sqlSession.delete("com.briup.mappers.StudentMapper.deleteStudent", studId); 
+		sqlSession.delete()方法返回 delete 语句执行后影响的行数。
+ 
+		如果不使用名空间（namespace）和语句 id 来调用映射语句，你可以通过创建一个映射器 Mapper 接口，并以类型安全的方式调用方法，如下所示：
+		package com.briup.mappers; 
+		public interface StudentMapper{ 
+		  int deleteStudent(int studId); 
+		} 
+		你可以使用映射器Mapper接口来调用updateStudent语句，如下所示：
+		StudentMapper mapper = sqlSession.getMapper(StudentMapper.class); 
+		int noOfRowsDeleted = mapper.deleteStudent(studId);
+
+		3.2.4 SELECT 查询语句
+		MyBatis真正强大的功能，在于映射SELECT查询结果到java的各种类型。
+		让我们看看一个简单的select查询是如何（在MyBatis中）配置的，如下所示：
+		<select id="findStudentById" parameterType="int"  
+		resultType="Student"> 
+			SELECT STUD_ID, NAME, EMAIL, PHONE  
+				FROM STUDENTS  
+			WHERE STUD_ID=#{stud Id} 
+		</select> 
+		我们可以如下调用此语句：
+		int studId = 1; 
+		Student student = sqlSession.selectOne("com.briup.mappers. StudentMapper.findStudentById", studId);
+
+		如果不使用名空间（namespace）和语句 id 来调用映射语句，你可以通过创建一个映射器 Mapper 接口，并以类型安全的方式调用方法，如下所示：
+		package com.briup.mappers; 
+		public interface StudentMapper{ 
+			Student findStudentById(Integer studId); 
+		}
+		你可以使用映射器Mapper接口来调用 findStudentById 语句，如下所示：
+		StudentMapper mapper = sqlSession.getMapper(StudentMapper.class); 
+		Student student = mapper.findStudentById(studId); 
+
+		如果你检查Student对象的属性值，你会发现studId属性值并没有被stud_id列值填充。这是因为MyBatis自动对java对象中和列名匹配的属性进行填充。这就是为什么name,email和 phone属性被填充而studId属性没有被填充。
+		解决这一问题，我们可以为列名起一个可以与JavaBean中属性名匹配的别名，如下所示：
+		<select id="findStudentById" parameterType="int"  
+		resultType="Student"> 
+			SELECT STUD_ID AS studId, NAME,EMAIL, PHONE  
+				FROM STUDENTS  
+			WHERE STUD_ID=#{studId} 
+		</select> 
+
+		
+		MyBatis执行返回多条结果的SELECT语句查询，如下所示：
+		<select id="findAllStudents" resultType="Student"> 
+			SELECT STUD_ID AS studId, NAME,EMAIL, PHONE  
+			FROM STUDENTS 
+		</select>
+
+		List<Student> students =  
+		sqlSession.selectList("com.briup.mappers.StudentMapper.findAllStudents"); 
+
+		映射器 Mapper 接口 StudentMapper 可以如下定义：
+		package com.briup.mappers; 
+		public interface StudentMapper{ 
+			List<Student> findAllStudents(); 
+		} 
+ 
+		使用上述代码，我们可以如下调用
+		StudentMapper mapper = sqlSession.getMapper(StudentMapper.class); 
+		List<Student> students = mapper.findAllStudents(); 
+
+		如果你注意到上述的SELECT映射定义，你可以看到，我们为所有的映射语句中的stud_id 起了别名。我们可以使用ResultMaps，来避免上述的到处重复别名。我们稍后会继续讨论。
+		除了java.util.List，你也可以使用其他类型的集合类，如Set,Map，以及（SortedSet）。MyBatis 根据集合的类型，会采用适当的集合实现，如下所示：
+		对于List，Collection，Iterable类型，MyBatis将返回java.util.ArrayList 
+		对于Map类型，MyBatis 将返回java.util.HashMap  
+		对于Set类型，MyBatis 将返回java.util.HashSet 
+		对于SortedSet类型，MyBatis将返回java.util.TreeSet 
+
+	3.3 结果集映射 ResultMaps
+		ResultMaps被用来将SELECT语句的结果集映射到java对象的属性中。我们可以定义结果集映射ResultMaps并且在一些SELECT语句上引用resultMap。MyBatis的结果集映射 ResultMaps特性非常强大，你可以使用它将简单的SELECT语句映射到复杂的一对一、一对多关系的SELECT语句上。
+
+
+		3.3.1 简单ResultMap 
+		一个映射了查询结果为Student类型的resultMap定义如下：
+		<resultMap id="StudentResult" type="com.briup.pojo.Student"> 
+		  <id property="studId" column="stud_id" /> 
+		  <result property="name" column="name" /> 
+		  <result property="email" column="email" /> 
+		  <result property="phone" column="phone" /> 
+		</resultMap>
+
+		<select id="findAllStudents" resultMap="StudentResult"> 
+			SELECT * FROM STUDENTS 
+		</select> 
+		<select id="findStudentById" parameterType="int" resultMap="StudentResult"> 
+			SELECT * FROM STUDENTS WHERE STUD_ID=#{studId} 
+		</select> 
+
+		resultMap的id值应该在此名空间内是唯一的,并且type属性是完全限定类名或者是返回类型的别名。
+		<result>子元素被用来将一个resultset列映射到对象的一个属性中。
+		<id>元素和<result>元素功能相同，不过<id>它被用来映射到唯一标识属性，用来区分和比较对象（一般和主键列相对应）。
+		在<select>语句中，我们使用了resultMap属性，而不是resultType属性。当<select>语句中配置了resutlMap属性，MyBatis会使用表中的列名与对象属性 【映射关系】 来填充对象中的属性值。
+		
+		注意:resultType和resultMap二者只能用其一，不能同时使用。
+
+
+		<select>映射语句中如何将查询【一条】数据填充到HashMap中?
+		<select id="findStudentById" parameterType="int" resultType="map"> 
+			SELECT * FROM STUDENTS WHERE STUD_ID=#{studId} 
+		</select> 
+		在上述的<select>语句中，我们将resultType配置成map，即java.util.HashMap的别名。在这种情况下，结果集的列名将会作为Map中的key值，而列值将作为Map的value值。
+ 
+		HashMap<String,Object> studentMap = sqlSession.selectOne("com.briup.mappers.StudentMapper.findStudentById", studId); 
+		System.out.println("stud_id :"+studentMap.get("stud_id")); 
+		System.out.println("name :"+studentMap.get("name")); 
+		System.out.println("email :"+studentMap.get("email")); 
+		System.out.println("phone :"+studentMap.get("phone"));
+
+
+
+		<select>映射语句中如何将查询【多条】数据填充到HashMap中?
+		<select id="findAllStudents" resultType="map"> 
+			SELECT STUD_ID, NAME, EMAIL, PHONE FROM STUDENTS 
+		</select> 
+
+		由于resultType=”map”和语句返回多行，则最终返回的数据类型应该是List<Map<String,Object>>，如下所示：
+
+		List<Map<String, Object>> studentMapList = sqlSession.select List("com.briup.mappers.StudentMapper.findAllStudents"); 
+		for(Map<String, Object> studentMap : studentMapList) { 
+		System.out.println("studId :" + studentMap.get("stud_id")); 
+			System.out.println("name :" + studentMap.get("name")); 
+			System.out.println("email :" + studentMap.get("email")); 
+			System.out.println("phone :" + studentMap.get("phone")); 
+		} 
+
+
+		其他实例1:
+		<select id="findAllStudents_student" resultType="Student">
+			SELECT STUD_ID AS STUDID,NAME,EMAIL,DOB
+			FROM STUDENTS
+		</select>
+		对应的接口中的方法,你写什么类型的集合,Mybatis就给你返回什么类型的集合,但是要注意使用SortedSet的时候,Student类需要实现Comparable接口,否则是不能进行排序的
+		例如:
+		public List<Student> findAllStudents_List();
+		或者
+		public Set<Student> findAllStudents_Set();
+		或者
+		public SortedSet<Student> findAllStudents_SortedSet();
+
+
+		其他实例2:
+		<select id="findAllName_list" resultType="String">
+			SELECT NAME
+			FROM STUDENTS
+		</select>
+		对应的接口中的方法: 把查询到所有名字都放到List集合中并返回
+		public List<String> findAllName_list();
+
+		
+		其他实例3:
+		<select id="findCount_int" resultType="int">
+			SELECT count(*)
+			FROM STUDENTS
+		</select>
+		对应的接口中的方法: 把查询到的这个值直接返回
+		public int findCount_int();
+
+
+		3.3.2 拓展 ResultMap
+		(注:这个例子在下面的一对一映射的知识点中进行测试,因为这里需要建立一对一关系的表结构)
+		我们可以从从另外一个<resultMap>，拓展出一个新的<resultMap>，这样，原先的属性映射可以继承过来，以实现:
+		<resultMap type="Student" id="StudentResult"> 
+		  <id property="stud Id" column="stud_id" /> 
+		  <result property="name" column="name" /> 
+		  <result property="email" column="email" /> 
+		  <result property="phone" column="phone" /> 
+		</resultMap>
+		
+		<!-- Student类中又新增加了一个属性,该属性的类型是Address -->
+		<!-- 自定义类Address,类中也有多个属性,同时数据库中ADDRESSES表与其对应 -->
+		<resultMap type="Student" id="StudentWithAddressResult" extends="StudentResult"> 
+		  <result property="address.addrId" column="addr_id" /> 
+		  <result property="address.street" column="street" /> 
+		  <result property="address.city" column="city" /> 
+		  <result property="address.state" column="state" /> 
+		  <result property="address.zip" column="zip" /> 
+		  <result property="address.country" column="country" /> 
+		</resultMap> 
+
+		其中id为StudentWithAddressResult的resultMap拓展了id为StudentResult的resultMap
+
+		如果你只想映射Student数据，你可以使用id为StudentResult的resultMap,如下所示：
+		 
+		<select id="findStudentById" parameterType="int"  
+		resultMap="StudentResult"> 
+			SELECT * FROM STUDENTS WHERE STUD_ID=#{stud Id} 
+		</select> 
+
+		如果你想将映射Student数据和Address数据，你可以使用id为StudentWithAddressResult的 resultMap：
+		<select id="selectStudentWithAddress" parameterType="int"  
+		resultMap="StudentWithAddressResult"> 
+			SELECT STUD_ID, NAME, EMAIL, PHONE, A.ADDR_ID, STREET, CITY, STATE, ZIP, COUNTRY 
+			FROM STUDENTS S LEFT OUTER JOIN ADDRESSES A ON  
+					S.ADDR_ID=A.ADDR_ID 
+			WHERE STUD_ID=#{studId} 
+		</select> 
+		注:该sql语句使用了连接查询中的左外连接,也可以使用等值连接
+
+
+	3.4 一对一映射
+		Student和Address是一个【一对一】关系
+		建表语言:
+		drop table students;
+		drop table addresses;
+		如果需要可以使用 cascade constraints;
+
+		create table addresses(
+		  addr_id number primary key,
+		  street varchar2(50) not null,
+		  city varchar2(50) not null,
+		  state varchar2(50) not null,
+		  zip varchar2(10),
+		  country varchar2(50)
+		);
+
+		create table students(
+		  stud_id number primary key,
+		  name varchar2(50) not null,
+		  email varchar2(50),
+		  phone varchar2(15),  
+		  dob date ,
+		  addr_id number references addresses(addr_id)
+		);
+
+		java类:
+		public class PhoneNumber {
+			private String countryCode;
+			private String stateCode;
+			private String number;
+			get/set
+		}
+		public class Address{
+			private Integer addrId;
+			private String street;
+			private String city;
+			private String state;
+			private String zip;
+			private String country;
+			get/set
+		}
+		public class Student {
+			private Integer studId; 
+			private String name; 
+			private String email; 
+			private Date dob;
+			private PhoneNumber phone;
+			private Address address;
+			get/set
+		}
+
+
+		addresses 表的样例输入如下所示：
+		addr_id  street		city	 state	zip   country 
+			1	 redSt		kunshan   W		12345  china 
+			2	 blueST		kunshan   W	    12345  china 
+
+		insert into addresses(addr_id,street,city,state,zip,country) values(1,'redSt','kunshan','W','12345','china');
+		insert into addresses(addr_id,street,city,state,zip,country) values(2,'blueST','kunshan','W','12345','china');
+
+
+		students 表的样例数据如下所示：
+		stud_id  name    email			phone		addr_id 
+		   1    John  john@gmail.com  123-456-7890   1 
+		   2    Paul  paul@gmail.com  111-222-3333   2 
+		
+		insert into students(stud_id,name,email,phone,addr_id) values(1,'John','john@gmail.com','123-456-7890',1);
+		insert into students(stud_id,name,email,phone,addr_id) values(2,'Paul','paul@gmail.com','111-222-3333',2);
+
+		
+		mapper XML:
+		 
+		<resultMap type="Student" id="StudentWithAddressResult"> 
+		  <id property="studId" column="stud_id" /> 
+		  <result property="name" column="name" /> 
+		  <result property="email" column="email" /> 
+		  <result property="phone" column="phone" /> 
+		  <result property="address.addrId" column="addr_id" /> 
+		  <result property="address.street" column="street" /> 
+		  <result property="address.city" column="city" /> 
+		  <result property="address.state" column="state" /> 
+		  <result property="address.zip" column="zip" /> 
+		  <result property="address.country" column="country" /> 
+		</resultMap> 
+		<select id="selectStudentWithAddress" parameterType="int" resultMap="StudentWithAddressResult"> 
+			select stud_id, name, email, a.addr_id, street, city, state, zip, country 
+			from students s left outer join addresses a on  
+				s.addr_id=a.addr_id 
+			where stud_id=#{studid} 
+		</select> 
+
+		我们可以使用(对象.属性名)的方式为内嵌的对象的属性赋值。在上述的resultMap中，Student的address属性使用该方式被赋上了 address 对应列的值。同样地，我们可以访问【任意深度】的内嵌对象的属性。
+ 
+		//接口定义 
+		public interface Student Mapper{ 
+			Student selectStudentWithAddress(int studId); 
+		} 
+
+		//方法调用
+		int studId = 1; 
+		StudentMapper studentMapper = sqlSession.getMapper(StudentMapper.class); 
+		Student student = studentMapper.selectStudentWithAddress(studId); 
+		System.out.println("Student :" + student); 
+		System.out.println("Address :" + student.getAddress()); 
+
+
+		上面展示了一对一关联映射的一种方法。然而，使用这种方式映射，如果address结果需要在其他的SELECT映射语句中映射成Address对象，我们需要为每一个语句重复这种映射关系。MyBatis提供了更好地实现一对一关联映射的方法：【嵌套结果】ResultMap和【嵌套查询】select语句。接下来，我们将讨论这两种方式。
+
+		
+
+
+		3.4.1 使用嵌套结果ResultMap实现一对一关系映射
+		我们可以使用一个嵌套结果ResultMap方式来获取Student及其Address信息，代码如下：
+		<resultMap type="Address" id="AddressResult"> 
+		  <id property="addrId" column="addr_id" /> 
+		  <result property="street" column="street" /> 
+		  <result property="city" column="city" /> 
+		  <result property="state" column="state" /> 
+		  <result property="zip" column="zip" /> 
+		  <result property="country" column="country" /> 
+		</resultMap> 
+		<resultMap type="Student" id="StudentWithAddressResult"> 
+		  <id property="studId" column="stud_id" /> 
+		  <result property="name" column="name" /> 
+		  <result property="email" column="email" /> 
+		  <association property="address" resultMap="AddressResult" /> 
+		</resultMap>
+		<select id="findStudentWithAddress" parameterType="int" resultMap="StudentWithAddressResult"> 
+			select stud_id, name, email, a.addr_id, street, city, state, 
+			zip, country 
+			from students s left outer join addresses a on  
+			s.addr_id=a.addr_id 
+			where stud_id=#{studid} 
+		</select> 
+		
+		注:association是关联的意思
+		元素<association>被用来导入“有一个”(has-one)类型的关联。在上述的例子中，我们使用了<association>元素引用了另外的在同一个XML文件中定义的<resultMap>。
+
+		同时我们也可以使用<association> 定义内联的resultMap，代码如下所示：
+		<resultMap type="Student" id="StudentWithAddressResult"> 
+		  <id property="studId" column="stud_id" /> 
+		  <result property="name" column="name" /> 
+		  <result property="email" column="email" /> 
+		  <association property="address" javaType="Address"> 
+			<id property="addrId" column="addr_id" /> 
+			<result property="street" column="street" /> 
+			<result property="city" column="city" /> 
+			<result property="state" column="state" /> 
+			<result property="zip" column="zip" /> 
+			<result property="country" column="country" /> 
+		  </association> 
+		</resultMap> 
+
+ 
+		3.4.2 使用嵌套查询实现一对一关系映射
+		我们可以通过使用嵌套select查询来获取Student及其Address信息，代码如下：
+		<resultMap id="AddressResult" type="Address"> 
+		  <id property="addrId" column="addr_id" /> 
+		  <result property="street" column="street" /> 
+		  <result property="city" column="city" /> 
+		  <result property="state" column="state" /> 
+		  <result property="zip" column="zip" /> 
+		  <result property="country" column="country" /> 
+		</resultMap>
+		<select id="findAddressById" parameterType="int" resultMap="AddressResult"> 
+			select * from addresses where addr_id=#{id} 
+		</select> 
+
+		<resultMap id="StudentWithAddressResult" type="Student"> 
+		  <id property="studId" column="stud_id" /> 
+		  <result property="name" column="name" /> 
+		  <result property="email" column="email" /> 
+		  <association property="address" column="addr_id" select="findAddressById" /> 
+		</resultMap>
+		<select id="findStudentWithAddress" parameterType="int" resultMap="StudentWithAddressResult"> 
+			select * from students where stud_id=#{id} 
+		</select> 
+
+		在此方式中，<association>元素的select属性被设置成了id为findAddressById的语句。这里，两个分开的SQL语句将会在数据库中分别执行，第一个调用findStudentById加载student信息，而第二个调用findAddressById来加载address信息。
+		addr_id列的值将会被作为输入参数传递给selectAddressById语句。
+		
+		我们可以如下调用findStudentWithAddress映射语句：
+		StudentMapper mapper = sqlSession.getMapper(StudentMapper.class); 
+		Student student = mapper.selectStudentWithAddress(studId); 
+		System.out.println(student); 
+		System.out.println(student.getAddress());
+
+
+
+	3.5 一对多映射
+		一个讲师tutors可以教授一个或者多个课程course。这意味着讲师和课程之间存在一对多的映射关系。
+		注意:在一对多关系中,数据库建表的时候外键一定是在多的那一方建立.
+		建表语句:
+		drop table tutors;
+		drop table courses;
+		如果需要可以使用 cascade constraints;
+
+		create table tutors(
+		  tutor_id number primary key,
+		  name varchar2(50) not null,
+		  email varchar2(50) ,
+		  phone varchar2(15) ,  
+		  addr_id number(11) references addresses (addr_id)
+		);
+
+		create table courses(
+		  course_id number primary key,
+		  name varchar2(100) not null,
+		  description varchar2(512),
+		  start_date date ,
+		  end_date date ,
+		  tutor_id number references tutors (tutor_id)
+		);
+
+		tutors 表的样例数据如下：
+		tutor_id   name     email		  phone		addr_id 
+			1		zs  zs@briup.com   123-456-7890    1 
+			2		ls  ls@briup.com   111-222-3333    2 
+		
+		insert into tutors(tutor_id,name,email,phone,addr_id)
+		values(1,'zs','zs@briup.com','123-456-7890',1);
+		insert into tutors(tutor_id,name,email,phone,addr_id)
+		values(2,'ls','ls@briup.com','111-222-3333',2);
+
+		course 表的样例数据如下：
+		course_id  name  description  start_date   end_date  tutor_id 
+			1	 JavaSE    JavaSE      2015-09-10  2016-02-10   1 
+			2	 JavaEE    JavaEE      2015-09-10  2016-03-10   2 
+			3	 MyBatis   MyBatis     2015-09-10  2016-02-20   2 
+		
+		insert into
+		courses(course_id,name,description,start_date,end_date,tutor_id)
+		values(1,'JavaSE','JavaSE',to_date('2015-09-10','yyyy-mm-dd'),to_date('2016-02-10','yyyy-mm-dd'),1);
+
+		insert into
+		courses(course_id,name,description,start_date,end_date,tutor_id)
+		values(2,'JavaEE','JavaEE',to_date('2015-09-10','yyyy-mm-dd'),to_date('2016-03-10','yyyy-mm-dd'),2);
+
+		insert into
+		courses(course_id,name,description,start_date,end_date,tutor_id)
+		values(3,'MyBatis','MyBatis',to_date('2015-09-10','yyyy-mm-dd'),to_date('2016-02-20','yyyy-mm-dd'),1);
+
+
+		在上述的表数据中，zs 讲师教授一个课程，而 ls 讲师教授两个课程
+
+		java代码:
+		public class Tutor{
+			private Integer tutorId; 
+			private String name; 
+			private String email; 
+			private PhoneNumber phone;
+			private Address address; 
+			private List<Course> courses;
+
+			get/set
+		}
+
+		public class Course{
+			private Integer courseId; 
+			private String name; 
+			private String description; 
+			private Date startDate; 
+			private Date endDate; 
+
+			get/set
+		}
+
+		<collection>元素被用来将多行课程结果映射成一个课程Course对象的一个集合。和一对一映射一样，我们可以使用【嵌套结果ResultMap】和【嵌套查询Select】语句两种方式映射实现一对多映射。
+ 
+			
+		3.5.1 使用内嵌结果 ResultMap 实现一对多映射
+		我们可以使用嵌套结果resultMap方式获得讲师及其课程信息，代码如下：
+		<resultMap type="Address" id="AddressResult"> 
+		  <id property="addrId" column="addr_id" /> 
+		  <result property="street" column="street" /> 
+		  <result property="city" column="city" /> 
+		  <result property="state" column="state" /> 
+		  <result property="zip" column="zip" /> 
+		  <result property="country" column="country" /> 
+		</resultMap>
+		<resultMap type="Course" id="CourseResult"> 
+		  <id column="course_id" property="courseId" /> 
+		  <result column="name" property="name" /> 
+		  <result column="description" property="description" /> 
+		  <result column="start_date" property="startDate" /> 
+		  <result column="end_date" property="endDate" /> 
+		</resultMap> 
+		<resultMap type="Tutor" id="TutorResult"> 
+		  <id column="tutor_id" property="tutorId" /> 
+		  <result column="name" property="name" /> 
+		  <result column="email" property="email" /> 
+		  <result column="phone" property="phone" /> 
+		  <association property="address" resultMap="AddressResult" />
+		  <collection property="courses" resultMap="CourseResult" /> 
+		</resultMap> 
+		
+		<select id="findTutorById" parameterType="int" resultMap="TutorResult"> 
+			select t.tutor_id, t.name as tutor_name, email, c.course_id, c.name, description, start_date, end_date 
+			from tutors t left outer join addresses a on t.addr_id=a.addr_id 
+			left outer join courses c on t.tutor_id=c.tutor_id 
+			where t.tutor_id=#{tutorid} 
+		</select> 
+
+		这里我们使用了一个简单的使用了JOINS连接的Select语句获取讲师及其所教课程信息。<collection>元素的resultMap属性设置成了CourseResult，CourseResult包含了Course对象属性与表列名之间的映射。
+		如果同时也要查询到Address相关信息,可以按照上面一对一的方式,在配置中加入<association>即可
+
+
+		3.5.2 使用嵌套Select语句实现一对多映射
+		我们可以使用嵌套Select语句方式获得讲师及其课程信息，代码如下：
+		<resultMap type="Address" id="AddressResult"> 
+		  <id property="addrId" column="addr_id" /> 
+		  <result property="street" column="street" /> 
+		  <result property="city" column="city" /> 
+		  <result property="state" column="state" /> 
+		  <result property="zip" column="zip" /> 
+		  <result property="country" column="country" /> 
+		</resultMap>
+		<resultMap type="Course" id="CourseResult"> 
+		  <id column="course_id" property="courseId" /> 
+		  <result column="name" property="name" /> 
+		  <result column="description" property="description" /> 
+		  <result column="start_date" property="startDate" /> 
+		  <result column="end_date" property="endDate" /> 
+		</resultMap>
+
+		<resultMap type="Tutor" id="TutorResult"> 
+		  <id column="tutor_id" property="tutorId" /> 
+		  <result column="tutor_name" property="name" /> 
+		  <result column="email" property="email" /> 
+		  <association property="address" column="addr_id" select="findAddressById"></association>
+		  <!-- 这里要注意:是把当前tutor_id表中列的值当做参数去执行findCoursesByTutor这个查询语句,最后把查询结果封装到Tutor类中的courses属性中 -->
+		  <collection property="courses" column="tutor_id" select="findCoursesByTutor" /> 
+		</resultMap> 
+		<select id="findTutorById" parameterType="int" resultMap="TutorResult"> 
+			select *  
+			from tutors
+			where tutor_id=#{tutor_id} 
+		</select>
+		<select id="findAddressById" parameterType="int" resultMap="AddressResult">
+			select *
+			from addresses
+			where addr_id = #{addr_id}
+		</select>
+		<select id="findCoursesByTutor" parameterType="int" resultMap="CourseResult">
+		   select * 
+		   from courses 
+		   where tutor_id=#{tutor_id} 
+		</select> 
+		
+		在这种方式中，<aossication>元素的select属性被设置为id为findCourseByTutor的语句，用来触发单独的SQL查询加载课程信息。tutor_id这一列值将会作为输入参数传递给 findCouresByTutor语句。
+ 
+		mapper接口代码:
+		public interface TutorMapper{ 
+			Tutor findTutorById(int tutorId); 
+		} 
+		
+		//方法调用
+		TutorMapper mapper = sqlSession.getMapper(TutorMapper.class); 
+		Tutor tutor = mapper.findTutorById(tutor Id); 
+		System.out.println(tutor); 
+		List<Course> courses = tutor.getCourses(); 
+		for (Course course : courses){ 
+			System.out.println(course); 
+		} 
+
+		【注意】嵌套查询Select语句查询会导致1+N选择问题。首先，主查询将会执行（1 次），对于主查询返回的每一行，另外一个查询将会被执行（主查询 N 行，则此查询 N 次）。对于大量数据而言，这会导致很差的性能问题。
+	
+	3.5 多对多映射
+		对于在mybatis中的多对多的处理,其实我们可以参照一对多来解决
+		【注意】在这个例子中有三个字段都是一样的:id,这种情况一定要小心,要给列起别名的(上面的一对一和一对多中如果出现这种情况也是一样的处理方式)
+		建表语句:
+		drop table course;
+		drop table student;
+		drop table student_course;
+		如果需要可以使用 cascade constraints;
+
+		create table course (
+		  id number primary key,
+		  course_code varchar2(30) not null,
+		  course_name varchar2(30) not null 
+		);
+		create table student (
+		  id number primary key,
+		  name varchar2(10) not null,
+		  gender varchar2(10) ,
+		  major varchar2(10) ,
+		  grade varchar2(10) 
+		);
+		create table student_course (
+		  id number primary key,
+		  student_id number references student(id),
+		  course_id number references course(id)
+		);
+		
+		java代码:
+		public class Course {
+			private Integer id;
+			private String courseCode; // 课程编号
+			private String courseName;// 课程名称
+			private List<Student> students;// 选课学生
+			get/set
+		}
+		public class Student {
+			private Integer id;
+			private String name; // 姓名
+			private String gender; // 性别
+			private String major; // 专业
+			private String grade; // 年级
+			private List<Course> courses;// 所选的课程
+			get/set
+		}
+		
+		Many2ManyMapper.java:
+		public interface Many2ManyMapper {
+			//插入student数据
+			public void insertStudent(Student student);
+			//插入course数据
+			public void insertCourse(Course course);
+			//通过id查询学生
+			public Student getStudentById(Integer id);
+			//通过id查询课程
+			public Course getCourseById(Integer id);
+			
+			//学生x选课y
+			public void studentSelectCourse(Student student, Course course);
+			//查询比指定id值小的学生信息
+			public List<Student> getStudentByIdOnCondition(Integer id);
+			//查询student级联查询出所选的course并且组装成完整的对象
+			public Student getStudentByIdWithCourses(Integer id);
+		}
+
+
+		Many2ManyMapper.xml:
+		<insert id="insertStudent" parameterType="Student">
+			<selectKey keyProperty="id" resultType="int" order="BEFORE">
+				select my_seq.nextval from dual
+			</selectKey>
+			insert into 
+				student(id,name,gender,major,grade)
+			values
+				(#{id},#{name},#{gender},#{major},#{grade})
+		</insert>
+		
+		<insert id="insertCourse" parameterType="Course">
+			<selectKey keyProperty="id" resultType="int" order="BEFORE">
+				select my_seq.nextval from dual
+			</selectKey>
+			insert into 
+				course(id,course_code,course_name)
+			values
+				(#{id},#{courseCode},#{courseName})
+		</insert>
+
+		<select id="getStudentById" parameterType="int" resultType="Student">
+			select id,name,gender,major,grade
+			from student
+			where id=#{id}
+		</select>
+		
+		<select id="getCourseById" parameterType="int" resultType="Course">
+			select id,course_code as courseCode,course_name as courseName
+			from course
+			where id=#{id}
+		</select>
+
+		<!-- param1代表方法中第一个参数 以此类推 -->
+		<insert id="studentSelectCourse">
+			insert into
+				student_course(id,student_id,course_id)
+			values
+				(my_seq.nextval,#{param1.id},#{param2.id})
+		</insert>
+		
+		<!-- 如果有特殊符号的话 需要用 <![CDATA[ 特殊符号 ]]>  例如 < & 等等 -->
+		<select id="getStudentByIdOnCondition" parameterType="int" resultType="Student">
+			select *
+			from student
+			where id <![CDATA[ < ]]> #{id}
+		</select>
+
+		<!-- 
+			 这里使用了嵌套结果ResultMap的方式进行级联查询 
+			 当然也可以使用嵌套查询select 
+		-->
+		<!-- 映射一个基本的Student查询结果 -->
+		<resultMap id="StudentResult" type="Student">
+			<id property="id" column="id"/>
+			<result property="name" column="name"/>
+			<result property="gender" column="gender"/>
+			<result property="major" column="major"/>
+			<result property="grade" column="grade"/>
+		</resultMap>
+		<!-- 继承上面那个基本的映射,再扩展出级联查询 -->
+		<resultMap id="StudentResultWithCourses" type="Student" extends="StudentResult">
+			<collection property="courses" resultMap="CourseResult"></collection>
+		</resultMap>
+		<!-- 这里特别要是的是column="cid" 这是和select语句中的 c.id as cid对应的 一定一定一定要对应起来 -->
+		<resultMap id="CourseResult" type="Course">
+			<id property="id" column="cid"/>
+			<result property="courseCode" column="course_code"/>
+			<result property="courseName" column="course_name"/>
+		</resultMap>
+		<!-- 
+			注意:查询语句的中的c.id as cid这个地方,避免名字相同出现查询结果不正确的情况
+			同时在id="CourseResult"的resultMap中也有与这里对应的设置要特别特别注意
+		-->
+		<select id="getStudentByIdWithCourses" parameterType="int" resultMap="StudentResultWithCourses">
+			select s.id,s.name,s.gender,s.major,s.grade,c.id as cid,c.course_code,c.course_name,sc.id,sc.student_id,sc.course_id
+			from student s,course c,student_course sc
+			where 
+			s.id=#{id}
+			and
+			s.id=sc.student_id 
+			and 
+			sc.course_id=c.id
+		</select>
+		
+		测试代码:
+		@Test
+		public void test_insertStudent(){
+			
+			SqlSession session = null;
+			try {
+				session = MyBatisSqlSessionFactory.openSession();
+				
+				Many2ManyMapper mapper = session.getMapper(Many2ManyMapper.class);
+					
+				mapper.insertStudent(new Student("张三","男","计算机","大四"));
+				
+				session.commit();
+				
+			} catch (Exception e) {
+				e.printStackTrace();
+				session.rollback();
+			}finally {
+				if(session!=null)session.close();
+			}
+			
+		}
+		
+		@Test
+		public void test_insertCourse(){
+			
+			SqlSession session = null;
+			try {
+				session = MyBatisSqlSessionFactory.openSession();
+				
+				Many2ManyMapper mapper = session.getMapper(Many2ManyMapper.class);
+					
+				mapper.insertCourse(new Course("001","corejava"));
+				mapper.insertCourse(new Course("002","oracle"));
+				
+				session.commit();
+				
+			} catch (Exception e) {
+				e.printStackTrace();
+				session.rollback();
+			}finally {
+				if(session!=null)session.close();
+			}
+			
+		}
+		
+		@Test
+		public void test_studentSelectCourse(){
+			
+			SqlSession session = null;
+			try {
+				session = MyBatisSqlSessionFactory.openSession();
+				
+				Many2ManyMapper mapper = session.getMapper(Many2ManyMapper.class);
+					
+				Student student = mapper.getStudentById(58);
+				Course course = mapper.getCourseById(59);
+				
+				mapper.studentSelectCourse(student, course);
+				
+				session.commit();
+				
+			} catch (Exception e) {
+				e.printStackTrace();
+				session.rollback();
+			}finally {
+				if(session!=null)session.close();
+			}
+			
+		}
+		
+		@Test
+		public void test_getStudentByIdOnCondition(){
+			
+			SqlSession session = null;
+			try {
+				session = MyBatisSqlSessionFactory.openSession();
+				
+				Many2ManyMapper mapper = session.getMapper(Many2ManyMapper.class);
+				
+				List<Student> list = mapper.getStudentByIdOnCondition(100);
+				
+				for(Student s:list){
+					System.out.println(s);
+				}
+				
+			} catch (Exception e) {
+				e.printStackTrace();
+			}finally {
+				if(session!=null)session.close();
+			}
+			
+		}
+		
+		@Test
+		public void test_getStudentByIdWithCourses(){
+			
+			SqlSession session = null;
+			try {
+				session = MyBatisSqlSessionFactory.openSession();
+				
+				Many2ManyMapper mapper = session.getMapper(Many2ManyMapper.class);
+				
+				Student student = mapper.getStudentByIdWithCourses(58);
+				
+				System.out.println(student);
+				
+			} catch (Exception e) {
+				e.printStackTrace();
+			}finally {
+				if(session!=null)session.close();
+			}
+			
+		}
+		
+		
+		注:这是从student这边出发所做的一些操作,从course一边开始操作是一样的,因为俩者的关系是多对多(对称的).
+		同时不论是一对一还是一对多还是多对多,都不能在mybatis中进行级联保存、更新、删除,我们需要使用sql语句控制每一步操作
+
+
+
+	3.6 动态SQL  dynamic-sql
+		有时候，静态的SQL语句并不能满足应用程序的需求。我们可以根据一些条件，来动态地构建 SQL语句。
+		例如，在Web应用程序中，有可能有一些搜索界面，需要输入一个或多个选项，然后根据这些已选择的条件去执行检索操作。在实现这种类型的搜索功能，我们可能需要根据这些条件来构建动态的SQL语句。如果用户提供了任何输入条件，我们需要将那个条件添加到SQL语句的WHERE子句中。MyBatis通过使用<if>,<choose>,<where>,<foreach>,<trim>元素提供了对构造动态SQL语句的高级别支持。
+
+		
+		3.6.1 If 条件
+		<if>元素被用来有条件地嵌入SQL片段，如果测试条件被赋值为true，则相应地SQL片段将会被添加到SQL语句中。假定我们有一个课程搜索界面，设置了讲师（Tutor）下拉列表框，课程名称（CourseName）文本输入框，开始时间（StartDate）输入框，结束时间（EndDate）输入框，作为搜索条件。假定课讲师下拉列表是必须选的，其他的都是可选的。
+		当用户点击搜索按钮时，我们需要显示符合以下条件的成列表：
+			特定讲师的课程 
+			课程名
+			包含输入的课程名称关键字的课程；如果课程名称输入为空，则取所有课程
+			在开始时间和结束时间段内的课程
+		我们可以对应的映射语句，如下所示：
+
+		<resultMap type="Course" id="CourseResult"> 
+		  <id column="course_id" property="courseId" /> 
+		  <result column="name" property="name" /> 
+		  <result column="description" property="description" /> 
+		  <result column="start_date" property="startDate" /> 
+		  <result column="end_date" property="endDate" /> 
+		</resultMap> 
+
+		<select id="searchCourses" parameterType="map" resultMap="CourseResult">
+			SELECT * FROM COURSES 
+				WHERE TUTOR_ID= #{tutorId} 
+			<if test="courseName != null"> 
+				AND NAME LIKE #{courseName} 
+			</if> 
+			<if test="startDate != null"> 
+				AND START_DATE >= #{startDate} 
+			</if> 
+			<if test="endDate != null"> 
+				AND END_DATE <![CDATA[ <= ]]> #{endDate} 
+			</if> 
+		</select> 
+
+		public interface DynamicSqlMapper{ 
+			List<Course> searchCourses(Map<String, Object> map); 
+		} 
+		public void searchCourses(){ 
+			Map<String,Object> map = new HashMap<String,Object>(); 
+			map.put("tutorId", 1); 
+			map.put("courseName", "%Java%"); 
+			map.put("startDate", new Date()); 
+			DynamicSqlMapper mapper = sqlSession.getMapper(DynamicSqlMapper.class); 
+			List<Course> courses = mapper.searchCourses(map);
+			for (Course course : courses){ 
+				System.out.println(course); 
+			} 
+		} 
+		此处将生成查询语句SELECT * FROM COURSES WHERE TUTOR_ID= ? AND NAME like ? AND START_DATE >= ?。
+ 
+		
+		3.6.2 choose,when 和 otherwise 条件
+		有时候，查询功能是以查询类别为基础的。首先，用户需要先选择是否希望通过选择讲师，课程名称，开始时间，或结束时间作为查询条件类别来进行查询，然后根据选择的查询类别，输入相应的参数。在这样的情景中，我们【需要只使用其中一种】查询类别。
+		MyBatis提供了<choose>元素支持此类型的SQL预处理。 
+		如果没有选择查询类别，则查询开始时间在今天之后的课程，代码如下：
+		注意:mysql中now()是当前时间 oracle需要使用sysdate
+		<select id="searchCourses" parameterType="map" resultMap="CourseResult"> 
+			SELECT * FROM COURSES 
+			<choose> 
+				<when test="searchBy == 'Tutor'"> 
+					WHERE TUTOR_ID= #{tutorId} 
+				</when> 
+				<when test="searchBy == 'CourseName'"> 
+					WHERE name like #{courseName} 
+				</when> 
+				<otherwise> 
+					WHERE start_date >= sysdate 
+				</otherwise> 
+			</choose> 
+		</select>
+		MyBatis计算<choose>测试条件的值，且使用第一个值为TRUE的子句。如果没有条件为 true，则使用<otherwise>内的子句。
+		相当于我们常用的java代码中的这个例子:
+		if(){
+			..
+		}
+		else if(){
+			..
+		}
+		else{
+			..
+		}
+
+
+		3.6.3 Where 条件
+		有时候，所有的查询条件应该是可选的。在需要使用至少一种查询条件的情况下，我们应该使用WHERE子句。并且如果有多个条件，我们需要在条件中添加AND或OR。
+		MyBatis提供了<where>元素支持这种类型的动态SQL语句。 
+		在我们查询课程界面，我们假设所有的查询条件是可选的。进而，当需要提供一个或多个查询条件时，应该改使用WHERE子句。
+		<select id="searchCourses" parameterType="map" resultMap="CourseResult"> 
+			SELECT * FROM COURSES 
+			<where>  
+				<if test="tutorId != null "> 
+					TUTOR_ID= #{tutorId} 
+				</if> 
+				<if test="courseName != null"> 
+					AND name like #{courseName} 
+				</if> 
+				<if test="startDate != null"> 
+					AND start_date >= #{startDate} 
+				</if> 
+				<if test="endDate != null"> 
+					AND end_date <![CDATA[ <= ]]> #{endDate} 
+				</if> 
+			</where> 
+		</select> 
+
+		<where>元素只有在其内部标签有返回内容时才会在动态语句上插入WHERE条件语句。并且，如果WHERE子句以AND或者OR打头，则打头的AND或OR将会被移除。例如:如果参数tutorId的值为null，并且courseName参数值不为null，则<where>标签会将AND name like #{courseName}中的AND移除掉，生成的SQL WHERE子句为：
+		where name like #{courseName}
+ 
+
+		3.6.4 <trim>条件
+		<trim>元素和<where>元素类似，但是<trim>提供了在添加前缀/后缀或者移除前缀/后缀方面提供更大的灵活性。
+		<select id="searchCourses" parameterType="map" resultMap="CourseResult"> 
+			SELECT * FROM COURSES 
+			<trim prefix="WHERE" suffixOverrides="or | and"> 
+				<if test=" tutorId != null ">
+					TUTOR_ID= #{tutorId} and
+				</if> 
+				<if test="courseName != null"> 
+					name like #{courseName} and
+				</if> 
+			</trim> 
+		</select>
+		
+		prefix表示有一个if成立则插入where语句
+		suffix表示后缀,和prefix相反
+
+		suffixOverrides="and"表示如果最后生成的sql语句多一个and,则自动去掉.
+		prefixOverrides的意思是处理前缀,和suffixOverrides相反
+
+		这里如果任意一个<if>条件为true，<trim>元素会插入WHERE,并且移除紧跟WHERE后面的AND 
+
+		3.6.5 foreach 循环
+		另外一个强大的动态SQL语句构造标签即是<foreach>。它可以迭代遍历一个数组或者列表，构造AND/OR条件或一个IN子句。
+		假设我们想找到tutor_id为 1，3，6的讲师所教授的课程，我们可以传递一个tutor_id组成的列表给映射语句，然后通过<foreach>遍历此列表构造动态SQL。
+		<select id="searchCourses" parameterType="map" resultMap="CourseResult"> 
+			SELECT * FROM COURSES 
+			<if test="tutorIds != null"> 
+				<where> 
+					<foreach item="tutorId" collection="tutorIds"> 
+						OR tutor_id=#{tutorId} 
+					</foreach> 
+				</where>  
+			</if>  
+		</select> 
+		
+		代码:
+		public interface DynamicSqlMapper{ 
+			List<Course> searchCoursesByTutors(Map<String,Object> map); 
+		} 
+		public void searchCoursesByTutors(){ 
+			Map<String,Object> map = new HashMap<String,Object>(); 
+			List<Integer> tutorIds = new ArrayList<Integer>(); 
+			tutorIds.add(1); 
+			tutorIds.add(3); 
+			tutorIds.add(6); 
+			map.put("tutorIds", tutorIds); 
+			DynamicSqlMapper mapper = 
+				sqlSession.getMapper(DynamicSqlMapper.class); 
+			List<Course> courses = mapper.searchCoursesByTutors(map); 
+			for (Course course : courses){ 
+				System.out.println(course); 
+			} 
+		} 
+ 
+		怎样使用<foreach>生成IN子句：
+		<select id="searchCourses" parameterType="map" resultMap="CourseResult"> 
+			SELECT * FROM COURSES 
+			<if test="tutorIds != null"> 
+				<where> 
+					tutor_id IN 
+					<foreach item="tempValue" collection="tutorIds" open="(" separator="," close=")"> 
+						#{tempValue} 
+					</foreach> 
+				</where> 
+			</if> 
+		</select> 
+
+
+
+		3.6.6 set 条件
+		<set>元素和<where>元素类似，如果其内部条件判断有任何内容返回时，他会插入SET SQL 片段。
+		 
+			<update id="updateCourse" parameterType="Course"> 
+				update courses  
+				<set> 
+				<if test="name != null">name=#{name},</if> 
+				<if test="description != null">description=#{description},</if> 
+				<if test="startDate != null">start_date=#{startDate},</if> 
+				<if test="endDate != null">end_date=#{endDate},</if> 
+				</set> 
+				where course_id=#{courseId} 
+			</update> 
+
+		这里，如果<if>条件返回了任何文本内容，<set>将会插入set关键字和其文本内容，并且会剔除将末尾的“，”。在上述的例子中，如果phone!=null,<set>将会让会移除phone=#{phone}后的逗号“,”，生成set phone=#{phone} 
+
+
+四 MyBatis中的注解
+	之前我们都是在映射器MapperXML配置文件中配置映射语句的。除此之外MyBatis也支持使用注解来配置映射语句。当我们使用基于注解的映射器接口时，我们不再需要在XML配置文件中配置了。如果你愿意，你也可以同时使用基于XML和基于注解的映射语句。
+
+	使用Person进行测试
+	drop table person;
+	create table person(
+		id number primary key,
+		name varchar2(15),
+		age number(7)
+	);
+	public class Person{
+		private Integer id;
+		private String name;
+		private Integer age;
+
+		get/set
+	}
+
+	
+	5.1 在映射器Mapper接口上使用注解
+		MyBatis对于大部分的基于XML的映射器元素（包括<select>,<update>）提供了对应的基于注解的配置项。然而在某些情况下，基于注解配置还不能支持基于XML的一些元素。
+	
+	5.2 映射语句
+		MyBatis提供了多种注解来支持不同类型的语句如:SELECT,INSERT,UPDATE,DELETE。
+		
+		5.2.1 @Insert 
+		我们可以使用 @Insert注解来定义一个INSERT映射语句：
+		 
+		package com.briup.mappers; 
+		public interface StudentMapper{ 
+
+			@Insert("insert into students(stud_id,name,email,addr_id, phone) values(#{studId},#{name},#{email},#{address.addrId},#{phone})") 
+			int insertStudent(Student student); 
+
+		} 
+
+		自动生成主键
+
+		可以使用 @Options注解的userGeneratedKeys和keyProperty属性让数据库产生 auto_increment（自增长）列的值，然后将生成的值设置到输入参数对象的属性中。
+
+		@Insert("insert into students(name,email,addr_id, phone) 
+				values(#{name},#{email},#{address.addr Id},#{phone})") 
+		@Options(useGeneratedKeys = true, keyProperty = "studId") 
+		int insertStudent(Student student); 
+
+		这里STUD_ID列值将会通过MySQL数据库自动生成。并且生成的值将会被设置到student对象的studId属性中。
+		StudentMapper mapper = sqlSession.getMapper(StudentMapper.class); 
+		mapper.insertStudent(student); 
+		int studentId = student.getStudId(); 
+		
+		有一些数据库如Oracle，并不支持AUTO_INCREMENT列属性，它使用序列（SEQUENCE）来产生主键的值。
+		我们可以使用 @SelectKey注解来为任意SQL语句来指定主键值，作为主键列的值。假设我们有一个名为STUD_ID_SEQ的序列来生成STUD_ID主键值。
+		 
+		@Insert("insert into students(stud_id,name,email,addr_id,phone) values(#{studId},#{name},#{email},#{address.addrId},#{phone})") 
+		@SelectKey(statement="select my_seq.nextval from dual",  
+		keyProperty="studId", resultType=int.class, before=true) 
+		int insertStudent(Student student); 
+
+		这里我们使用了 @SelectKey来生成主键值，并且存储到了student对象的studId属性上。由于我们设置了before=true,该语句将会在执行INSERT语句之前执行.
+
+		@Insert("insert into students(name,email,addr_id, phone)  
+		values(#{name},#{email},#{address.addrId},#{phone})") 
+		@SelectKey(statement="select my_seq.currval from dual",  
+		keyProperty="studId", resultType=int.class, before=false) 
+		int insertStudent(Student student); 
+
+ 
+
+		5.2.2 @Update 
+		我们可以使用 @Update注解来定义一个UPDATE映射语句，如下所示：
+		@Update("update students set name=#{name}, email=#{email},  
+		phone=#{phone} where stud_id=#{studId}") 
+		int updateStudent(Student student); 
+
+
+		StudentMapper mapper = sqlSession.getMapper(StudentMapper.class); 
+		int noOfRowsUpdated = mapper.updateStudent(student); 
+
+
+
+		5.2.3 @Delete 
+		我们可以使用 @Delete注解来定义一个DELETE映射语句，如下所示：
+		@Delete("delete from students where stud_id=#{studId}") 
+		int deleteStudent(int studId);
+
+
+		5.2.4 @Select
+		我们可以使用 @Select注解来定义一个SELECT映射语句。
+		 
+		package com.briup.mappers; 
+		public interface StudentMapper{ 
+			@Select("select stud_id as studid, name, email, phone from 
+					students where stud_id=#{studId}") 
+			Student findStudentById(Integer studId); 
+		} 
+		为了将列名和对象中属性名匹配，我们为stud_id起了一个studId的别名。如果返回了多行结果，将抛出TooManyResultsException异常。
+ 
+
+	5.3 结果映射
+		我们可以将查询结果通过别名或者是 @Results注解与JavaBean属性映射起来。
+		 
+		package com.briup.mappers; 
+		public interface StudentMapper{ 
+			@Select("select * from students") 
+			@Results( 
+			{ 
+				@Result(id = true, column = "stud_id", property = "studId"), 
+				@Result(column = "name", property = "name"), 
+				@Result(column = "email", property = "email"), 
+				@Result(column = "addr_id", property = "address.addrId") 
+			}) 
+			List<Student> findAllStudents(); 
+		} 
+		
+		注意:
+		@Results注解和映射器XML配置文件元素<resultMap> 对应。然而，My Batis3.2.2不能为 @Results注解赋予一个ID。所以，不像<resultMap>元素，我们不应在不同的映射语句中重用 @Results声明。这意味着即使 @Results注解完全相同，我们也需要(在不同的映射接口中)重复 @Results声明。
+
+		
+		例如，看下面的 findStudentById()和 findAllStudents()方法：
+ 
+		@Select("select * from students where stud_id=#{studId}") 
+		@Results( 
+		{ 
+			@Result(id = true, column = "stud_id", property = "studId"), 
+			@Result(column = "name", property = "name"), 
+			@Result(column = "email", property = "email"), 
+			@Result(column = "addr_id", property = "address.addrId") 
+		}) 
+		Student findStudentById(int studId);
+
+		@Select("select * from students") 
+		@Results( 
+		{ 
+			@Result(id = true, column = "stud_id", property = "studId"), 
+			@Result(column = "name", property = "name"), 
+			@Result(column = "email", property = "email"), 
+			@Result(column = "addr_id", property = "address.addrId") 
+		}) 
+		List<Student> findAllStudents(); 
+
+		
+		这里两个语句的 @Results配置完全相同，但是必须得重复它。这里有一个解决方法。我们可以创建一个映射器Mapper配置文件，然后配置<resultMap>元素，然后使用 @ResultMap注解引用此<resultMap>。 在StudentMapper.xml中定义一个ID为StudentResult的<resultMap>。
+		
+		xml配置:
+		 
+		<mapper namespace="com.briup.mappers.StudentMapper"> 
+		  <resultMap type="Student" id="StudentResult"> 
+			<id property="studId" column="stud_id" /> 
+			<result property="name" column="name" /> 
+			<result property="email" column="email" /> 
+			<result property="phone" column="phone" /> 
+		  </resultMap> 
+		</mapper> 
+
+		在StudentMapper.java中,使用 @Result Map引用名为StudentResult的resultMap:
+		 
+		public interface StudentMapper{ 
+			@Select("select * from students where stud_id=#{studId}") 
+			@ResultMap("com.briup.mappers.StudentMapper.StudentResult") 
+			Student findStudentById(int studId); 
+
+			@Select("select * from students") 
+			@ResultMap("com.briup.mappers.StudentMapper.StudentResult") 
+			List<Student> findAllStudents(); 
+		} 
+		
+
+		
+	5.4 一对一映射
+		MyBatis提供了 @One注解来使用嵌套select语句（Nested-Select）加载一对一关联查询数据。让我们看看怎样使用 @One注解获取学生及其地址信息
+		 
+		public interface StudentMapper{ 
+			@Select("select addr_id as addrId, street, city, state, zip, country from addresses where addr_id=#{id}") 
+			Address findAddressById(int id); 
+
+			@Select("select * from students where stud_id=#{studId} ") 
+			@Results( 
+			{ 
+				@Result(id = true, column = "stud_id", property = "studId"), 
+				@Result(column = "name", property = "name"), 
+				@Result(column = "email", property = "email"), 
+				@Result(property = "address", column = "addr_id", 
+				one = @One(select = "com.briup.mappers.Student Mapper.findAddressById")) 
+			}) 
+			Student selectStudentWithAddress(int studId); 
+		} 
+		
+		这里我们使用了 @One注解的select属性来指定一个使用了完全限定名的方法上，该方法会返回一个Address对象。使用column=”addr_id”,则STUEDNTS表中列addr_id的值将会作为输入参数传递给find Address By Id()方法。如果 @One SELECT查询返回了多行结果，则会抛出TooManyResultsException异常。
+
+		int studId = 1; 
+		StudentMapper studentMapper = sqlSession.getMapper(StudentMapper.class); 
+		Student student = studentMapper.selectStudentWithAddress(studId); 
+		System.out.println("Student :"+student); 
+		System.out.println("Address :"+student.getAddress()); 
+
+		我们可以通过基于XML的映射器配置，使用嵌套结果ResultMap来加载一对一关联的查询。而MyBatis3.2.2 版本，并没有对应的注解支持。但是我们可以在映射器Mapper配置文件中配置<resultMap>并且使用 @ResultMap注解来引用它。
+		在StudentMapper.xml中配置<resultMap>，如下所示：
+		<mapper namespace="com.briup.mappers.StudentMapper"> 
+		  <resultMap type="Address" id="AddressResult"> 
+			<id property="addrId" column="addr_id" /> 
+			<result property="street" column="street" /> 
+			<result property="city" column="city" /> 
+			<result property="state" column="state" /> 
+			<result property="zip" column="zip" /> 
+			<result property="country" column="country" /> 
+		  </resultMap> 
+		  <resultMap type="Student" id="StudentWithAddressResult"> 
+			<id property="studId" column="stud_id" /> 
+			<result property="name" column="name" /> 
+			<result property="email" column="email" /> 
+			<association property="address" resultMap="AddressResult" /> 
+		  </resultMap> 
+		</mapper> 
+		
+		public interface StudentMapper{ 
+			@Select("select stud_id, name, email, a.addr_id, street, city, state, zip, country" + " FROM students s left outer join addresses a on s.addr_id=a.addr_id" + " where stud_id=#{studId} ") 
+			@ResultMap("com.briup.mappers.StudentMapper.StudentWithAddressResult") 
+			Student selectStudentWithAddress(int id); 
+		} 
+	5.5 一对多映射
+	MyBatis提供了 @Many注解，用来使用嵌套Select语句加载一对多关联查询。现在让我们看一下如何使用 @Many注解获取一个讲师及其教授课程列表信息：
+	 
+	public interface TutorMapper{ 
+		@Select("select addr_id as addrId, street, city, state, zip, 
+				country from addresses where addr_id=#{id}") 
+		Address findAddressById(int id); 
+
+		@Select("select * from courses where tutor_id=#{tutorId}") 
+		@Results( 
+		{ 
+			@Result(id = true, column = "course_id", property = "courseId"), 
+			@Result(column = "name", property = "name"), 
+			@Result(column = "description", property = "description"), 
+			@Result(column = "start_date”,property = "startDate"), 
+			@Result(column = "end_date”,property = "endDate") 
+		}) 
+		List<Course> findCoursesByTutorId(int tutorId); 
+
+		@Select("SELECT tutor_id, name as tutor_name, email, addr_id 
+				FROM tutors where tutor_id=#{tutorId}") 
+		@Results( 
+		{ 
+			@Result(id = true, column = "tutor_id", property = "tutorId"), 
+			@Result(column = "tutor_name", property = "name"), 
+			@Result(column = "email", property = "email"), 
+			@Result(property = "address", column = "addr_id", 
+			one = @One(select = "com.briup.mappers.Tutor Mapper.findAddressById")), 
+			@Result(property = "courses", column = "tutor_id", 
+			many = @Many(select = "com.briup.mappers.Tutor Mapper.findCoursesByTutorId")) 
+		}) 
+		Tutor findTutorById(int tutorId); 
+	} 
+
+	这里我们使用了 @Many注解的select属性来指向一个完全限定名称的方法，该方法将返回一个 List<Course>对象。使用column=”tutor_id”，TUTORS表中的tutor_id列值将会作为输入参数传递给find Courses By Tutor Id()方法。 
+	之前我们使用过嵌套结果ResultMap来加载一对多关联的查询。而MyBatis3.2.2版本，并没有对应的注解支持。但是我们可以在映射器Mapper配置文件中配置<result Map>并且使用 @ResultMap注解来引用它。
+ 
+	在TutorMapper.xml中配置<resultMap>,如下所示：
+	<mapper namespace="com.briup.mappers.Tutor Mapper"> 
+	  <resultMap type="Address" id="AddressResult"> 
+		<id property="addrId" column="addr_id" /> 
+		<result property="street" column="street" /> 
+		<result property="city" column="city" /> 
+		<result property="state" column="state" /> 
+		<result property="zip" column="zip" /> 
+		<result property="country" column="country" /> 
+	  </resultMap> 
+	  <resultMap type="Course" id="CourseResult"> 
+		<id column="course_id" property="course Id" /> 
+		<result column="name" property="name" /> 
+		<result column="description" property="description" /> 
+		<result column="start_date" property="startDate" /> 
+		<result column="end_date" property="endDate" /> 
+	  </resultMap> 
+	  <resultMap type="Tutor" id="TutorResult"> 
+		<id column="tutor_id" property="tutorId" /> 
+		<result column="tutor_name" property="name" /> 
+		<result column="email" property="email" /> 
+		<association property="address" result Map="AddressResult" /> 
+		<collection property="courses" result Map="CourseResult" /> 
+	  </resultMap> 
+	</mapper> 
+
+	 
+	public interface TutorMapper{ 
+		@Select("select t.tutor_id, t.name as tutor_name,email,a.addr_id, street, city, state, zip, country, course_id, c.name,description, start_date, end_date  from tutors t left outer join addresses a on t.addr_id=a.addr_id left outer join courses c on t.tutor_id=c.tutor_id where t.tutor_id=#{tutorId}") 
+		@Result Map("com.briup.mappers.TutorMapper.TutorResult") 
+		Tutor selectTutorById(int tutorId); 
+	} 
+

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zhisheng.mapper.One2OneMapper">
+    <resultMap type="Address" id="AddressResult">
+        <id property="addrId" column="addr_id" />
+        <result property="street" column="street" />
+        <result property="city" column="city" />
+        <result property="state" column="state" />
+        <result property="zip" column="zip" />
+        <result property="country" column="country" />
+    </resultMap>
+    <resultMap type="Student" id="StudentWithAddressResult">
+        <id property="studId" column="studId" />
+        <result property="name" column="name" />
+        <result property="email" column="email" />
+        <result property="dob" column="dob"/>
+
+        <!--association是关联的意思-->
+        <association property="address" resultMap="AddressResult" />
+    </resultMap>
+    <select id="findStudentWithAddress" parameterType="int" resultMap="StudentWithAddressResult">
+        select studId, name, email,dob, a.addr_id, street, city, state, zip, country
+        from students s left outer join address a
+        on s.addr_id=a.addr_id
+        where studId=#{studId}
+    </select>
+
+
+
+</mapper>

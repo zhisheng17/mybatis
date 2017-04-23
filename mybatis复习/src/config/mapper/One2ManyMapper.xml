@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zhisheng.mapper.One2ManyMapper">
+
+    <resultMap type="Address" id="AddressResult">
+        <id property="addrId" column="addr_id" />
+        <result property="street" column="street" />
+        <result property="city" column="city" />
+        <result property="state" column="state" />
+        <result property="zip" column="zip" />
+        <result property="country" column="country" />
+    </resultMap>
+    <resultMap type="Course" id="CourseResult">
+        <id column="course_id" property="courseId" />
+        <result column="name" property="name" />
+        <result column="description" property="description" />
+        <result column="start_date" property="startDate" />
+        <result column="end_date" property="endDate" />
+    </resultMap>
+    <!--第一种方法：使用内嵌结果 ResultMap 实现一对多映射-->
+    <!--<resultMap type="Tutor" id="TutorResult">
+        <id column="tutor_id" property="tutorId" />
+        <result column="name" property="name" />
+        <result column="email" property="email" />
+        <result column="phone" property="phone" />
+        <association property="address" resultMap="AddressResult" />
+        &lt;!&ndash;collection 元素被用来将多行课程结果映射成一个课程Course对象的一个集合。
+        和一对一映射一样，我们可以使用【嵌套结果ResultMap】和【嵌套查询Select】
+        语句两种方式映射实现一对多映射。&ndash;&gt;
+        <collection property="courses" resultMap="CourseResult" />
+    </resultMap>
+    <select id="findTutorById" parameterType="int" resultMap="TutorResult">
+        select t.tutor_id, t.name, t.email, c.course_id, c.name, description, start_date, end_date
+			from tutors t left outer join address a on t.adds_id=a.addr_id
+			left outer join courses c on t.tutor_id=c.tutor_id
+			where t.tutor_id=#{tutorId}
+    </select>-->
+    <!--这里使用了一个简单的使用了JOINS连接的Select语句获取讲师及其所教课程信息。<collection>元素的resultMap属性设置成了CourseResult，CourseResult包含了Course对象属性与表列名之间的映射。
+		如果同时也要查询到Address相关信息,可以按照上面一对一的方式,在配置中加入<association>即可-->
+
+
+    <!--第二种方法：使用嵌套Select语句实现一对多映射-->
+    <resultMap type="Tutor" id="TutorResult">
+        <id column="tutor_id" property="tutorId" />
+        <result column="tutor_name" property="name" />
+        <result column="email" property="email" />
+        <association property="address" column="adds_id" select="findAddressById"></association>
+        <!-- 这里要注意:是把当前tutor_id表中列的值当做参数去执行findCoursesByTutor这个查询语句,最后把查询结果封装到Tutor类中的courses属性中 -->
+        <collection property="courses" column="tutor_id" select="findCoursesByTutor" />
+    </resultMap>
+    <select id="findTutorById" parameterType="int" resultMap="TutorResult">
+        SELECT * from tutors WHERE tutor_id=#{tutorId}
+    </select>
+    <select id="findAddressById" parameterType="int" resultMap="AddressResult">
+        SELECT * from address WHERE addr_id = #{addr_id}
+    </select>
+    <select id="findCoursesByTutor" parameterType="int" resultMap="CourseResult">
+        select * from courses where tutor_id=#{tutorId}
+    </select>
+    <!--在这种方式中，<collection>元素的select属性被设置为id为findCourseByTutor的语句，
+    用来触发单独的SQL查询加载课程信息。tutor_id这一列值将会作为输入参数传递给 findCouresByTutor语句。-->
+
+
+
+</mapper>

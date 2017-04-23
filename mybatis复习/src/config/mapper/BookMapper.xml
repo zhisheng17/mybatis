@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zhisheng.mapper.BookMapper">
+    <resultMap type="Book" id="BookResult">
+        <id property="id" column="id" />
+        <result property="bookName" column="bookName" />
+        <result property="author" column="author" />
+        <result property="publishDate" column="publishDate"/>
+        <result property="price" column="price" />
+    </resultMap>
+
+    <insert id="addBook" parameterType="Book">
+        INSERT INTO book(id, bookName, author, publishDate, price)
+        VALUES (#{id}, #{bookName}, #{author}, #{publishDate}, #{price})
+    </insert>
+
+    <delete id="removeBook" parameterType="int">
+        DELETE FROM book WHERE id = #{id}
+    </delete>
+
+    <!--  ${value}：接收输入参数的内容，如果传入类型是简单类型，${}中只能够使用value -->
+    <select id="findBookByName" parameterType="String" resultType="Book">
+        SELECT * FROM book WHERE bookName like '%${value}%'
+    </select>
+
+    <select id="findBookById" parameterType="int" resultType="Book">
+        SELECT * FROM book WHERE id = #{id}
+    </select>
+
+    <select id="findAllBooksName" resultType="String">
+        SELECT bookName FROM book
+    </select>
+
+    <select id="findCountOfBook" resultType="int">
+        SELECT COUNT(*) FROM book
+    </select>
+    
+    <update id="updateBook" parameterType="Book">
+        UPDATE book SET bookName = #{bookName}, author = #{author}, price = #{price} WHERE id = #{id}
+    </update>
+
+    <select id="findBookNameAndAuthor" resultType="map">
+        select bookName, author from book
+    </select>
+</mapper>

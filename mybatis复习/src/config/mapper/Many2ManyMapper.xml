@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zhisheng.mapper.Many2ManyMapper">
+    <insert id="insertStudent" parameterType="Student2">
+        insert into
+        student(id,name,gender,major,grade)
+        values
+        (#{id},#{name},#{gender},#{major},#{grade})
+    </insert>
+
+    <insert id="insertCourse" parameterType="Course2">
+        insert into
+        course(id,course_code,course_name)
+        values
+        (#{id},#{course_code},#{course_name})
+    </insert>
+
+    <select id="getStudentById" parameterType="int" resultType="Student2">
+        select id,name,gender,major,grade
+		from student
+		where id=#{id}
+    </select>
+
+    <select id="getCourseById" parameterType="int" resultType="Course2">
+        select id,course_code ,course_name
+		from course
+		where id=#{id}
+    </select>
+
+    <!-- param1代表方法中第一个参数 以此类推 -->
+    <insert id="studentSelectCourse">
+        insert into
+        student_course(id,student_id,course_id)
+        values
+        (my_seq.nextval,#{param1.id},#{param2.id})
+    </insert>
+
+    <!-- 如果有特殊符号的话 需要用 <![CDATA[ 特殊符号 ]]>  例如 < & 等等 -->
+    <select id="getStudentByIdOnCondition" parameterType="int" resultType="Student2">
+        select *
+        from student
+        where id <![CDATA[ < ]]> #{id}
+    </select>
+
+    <!--这里使用了嵌套结果ResultMap的方式进行级联查询,当然也可以使用嵌套查询select-->
+    <!-- 映射一个基本的Student查询结果 -->
+    <resultMap id="StudentResult" type="Student2">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="gender" column="gender"/>
+        <result property="major" column="major"/>
+        <result property="grade" column="grade"/>
+    </resultMap>
+    <!-- 继承上面那个基本的映射,再扩展出级联查询 -->
+    <resultMap id="StudentResultWithCourses" type="Student2" extends="StudentResult">
+        <collection property="courses" resultMap="CourseResult"></collection>
+    </resultMap>
+    <!-- 这里特别要是的是column="cid" 这是和select语句中的 c.id as cid对应的 一定一定一定要对应起来 -->
+    <resultMap id="CourseResult" type="Course2">
+        <id property="id" column="id"/>
+        <result property="course_code" column="course_code"/>
+        <result property="course_name" column="course_name"/>
+    </resultMap>
+    <!--注意:查询语句的中的c.id as cid这个地方,避免名字相同出现查询结果不正确的情况
+         同时在id="CourseResult"的resultMap中也有与这里对应的设置要特别特别注意-->
+
+    <select id="getStudentByIdWithCourses" parameterType="int" resultMap="StudentResultWithCourses">
+        select s.id,s.name,s.gender,s.major,s.grade,c.id as cid,c.course_code,c.course_name,sc.id,sc.student_id,sc.course_id
+        from student s,course c,student_course sc
+        where
+        s.id=#{id}
+        and
+        s.id=sc.student_id
+        and
+        sc.course_id=c.id
+    </select>
+<!--
+		注:这是从student这边出发所做的一些操作,从course一边开始操作是一样的,因为俩者的关系是多对多(对称的).
+		同时不论是一对一还是一对多还是多对多,都不能在mybatis中进行级联保存、更新、删除,我们需要使用sql语句控制每一步操作-->
+</mapper>

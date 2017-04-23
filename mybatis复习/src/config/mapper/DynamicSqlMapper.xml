@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zhisheng.mapper.DynamicSqlMapper">
+    <resultMap type="Course" id="CourseResult">
+        <id column="course_id" property="courseId" />
+        <result column="name" property="name" />
+        <result column="description" property="description" />
+        <result column="start_date" property="startDate" />
+        <result column="end_date" property="endDate" />
+    </resultMap>
+
+    <select id="searchCourses" parameterType="map" resultMap="CourseResult">
+        <!-- if条件
+        SELECT * FROM COURSES
+        WHERE TUTOR_ID= #{tutorId}
+        <if test="courseName != null">
+            AND NAME LIKE #{courseName}
+        </if>
+        <if test="startDate != null">
+            AND START_DATE >= #{startDate}
+        </if>
+        <if test="endDate != null">
+            AND END_DATE <![CDATA[ <= ]]> #{endDate}
+        </if>-->
+
+        <!--choose,when 和 otherwise 条件
+        SELECT * FROM COURSES
+        <choose>
+            <when test="searchBy == 'Tutor'">
+                WHERE TUTOR_ID= #{tutorId}
+            </when>
+            <when test="searchBy == 'CourseName'">
+                WHERE name like #{courseName}
+            </when>
+            <otherwise>
+                WHERE start_date >= sysdate
+            </otherwise>
+        </choose>-->
+
+        <!--Where 条件
+        SELECT * FROM COURSES
+        <where>
+            <if test="tutorId != null ">
+                TUTOR_ID= #{tutorId}
+            </if>
+            <if test="courseName != null">
+                AND name like #{courseName}
+            </if>
+            <if test="startDate != null">
+                AND start_date >= #{startDate}
+            </if>
+            <if test="endDate != null">
+                AND end_date <![CDATA[ <= ]]> #{endDate}
+            </if>
+        </where>-->
+
+       <!--<trim>条件-->
+        SELECT * FROM COURSES
+        <trim prefix="WHERE" suffixOverrides="and">
+            <if test=" tutorId != null ">
+                TUTOR_ID= #{tutorId} and
+            </if>
+            <if test="courseName != null">
+                name like #{courseName} and
+            </if>
+        </trim>
+    </select>
+
+    <select id="searchCoursesByTutors" parameterType="map" resultMap="CourseResult">
+        <!--SELECT * FROM COURSES
+        <if test="tutorIds != null">
+            <where>
+                <foreach item="tutorId" collection="tutorIds">
+                    OR tutor_id=#{tutorId}
+                </foreach>
+            </where>
+        </if>-->
+
+        <!--怎样使用<foreach>生成IN子句：-->
+        SELECT * FROM COURSES
+        <if test="tutorIds != null">
+            <where>
+                tutor_id IN
+                <foreach item="tempValue" collection="tutorIds" open="(" separator="," close=")">
+                    #{tempValue}
+                </foreach>
+            </where>
+        </if>
+    </select>
+
+    <!--set 条件-->
+    <update id="updateStudent" parameterType="Student">
+        update students
+        <set>
+            <if test="name != null">name=#{name},</if>
+            <if test="email != null">email=#{email},</if>
+            <if test="phone != null">phone=#{phone},</if>
+        </set>
+        where stud_id=#{studId}
+    </update>
+</mapper>

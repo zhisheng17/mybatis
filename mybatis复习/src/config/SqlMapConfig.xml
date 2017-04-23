@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+    <!--加载配置文件-->
+    <properties resource="db.properties">
+        <!--在properties中还可以配置一些属性名和属性值-->
+        <!--<property name="" value=""/>   -->
+    </properties>
+    <!--类型命名-->
+    <typeAliases>
+        <typeAlias alias="Student" type="com.zhisheng.pojo.Student" />
+        <typeAlias alias="Book"  type="com.zhisheng.pojo.Book" />
+        <typeAlias alias="Address" type="com.zhisheng.pojo.Address"/>
+        <typeAlias alias="Course" type="com.zhisheng.pojo.Course"/>
+        <typeAlias alias="Tutor" type="com.zhisheng.pojo.Tutor"/>
+        <typeAlias alias="Student2" type="com.zhisheng.pojo.Student2"/>
+        <typeAlias alias="Course2" type="com.zhisheng.pojo.Course2"/>
+    </typeAliases>
+
+    <typeHandlers>
+        <typeHandler handler="com.zhisheng.pojo.PhoneTypeHandler" />
+    </typeHandlers>
+
+    <!--环境，默认开发环境-->
+    <environments default="development">
+        <environment id="development">
+            <transactionManager type="JDBC" />
+            <!--数据源-->
+            <dataSource type="POOLED">
+                <!--
+                <property name="driver" value="com.mysql.jdbc.Driver" />
+                <property name="url" value="jdbc:mysql://localhost:3306/MapperTest" />
+                -->
+                <property name="driver" value="${driver}" />
+                <property name="url" value="${url}" />
+                <property name="username" value="${username}" />
+                <property name="password" value="${password}" />
+            </dataSource>
+        </environment>
+    </environments>
+    <!--映射器-->
+    <mappers>
+        <mapper resource="config/mapper/StudentMapper.xml" />
+        <mapper resource="config/mapper/ExtendMapper.xml"/>
+        <mapper resource="config/mapper/BookMapper.xml" />
+        <mapper resource="config/mapper/One2OneMapper.xml" />
+        <mapper resource="config/mapper/One2ManyMapper.xml"/>
+        <mapper resource="config/mapper/Many2ManyMapper.xml"/>
+        <mapper resource="config/mapper/DynamicSqlMapper.xml"/>
+        <mapper class="com.zhisheng.annotation.AnnotationMapper"/>
+    </mappers>
+</configuration>
